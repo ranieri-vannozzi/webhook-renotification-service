@@ -1,5 +1,7 @@
 package it.ranierivannozzi.webhook;
 
+import static com.tngtech.archunit.base.DescribedPredicate.alwaysTrue;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.onionArchitecture;
@@ -17,6 +19,9 @@ import com.tngtech.archunit.lang.ArchRule;
 @AnalyzeClasses(packages = "it.ranierivannozzi.webhook", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTests {
 
+	/**
+	 * The config package is the composition root: it is the one place allowed to know every layer, to wire them.
+	 */
 	@ArchTest
 	static final ArchRule hexagonalLayers = onionArchitecture()
 			.domainModels("..domain.model..")
@@ -25,7 +30,8 @@ class ArchitectureTests {
 			.adapter("web", "..adapter.in.web..")
 			.adapter("dataset", "..adapter.out.dataset..")
 			.adapter("queue", "..adapter.out.queue..")
-			.withOptionalLayers(true);
+			.withOptionalLayers(true)
+			.ignoreDependency(resideInAPackage("..config.."), alwaysTrue());
 
 	@ArchTest
 	static final ArchRule domainIsFrameworkFree = classes()

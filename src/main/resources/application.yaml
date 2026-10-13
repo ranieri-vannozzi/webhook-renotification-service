@@ -1,3 +1,7 @@
 spring:
   application:
     name: webhook.oneshot
+  mvc:
+    problemdetails:
+      # Malformed requests get an RFC 9457 problem body instead of the default error page
+      enabled: true
