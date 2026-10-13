@@ -28,10 +28,21 @@ class ArchitectureTests {
 			.withOptionalLayers(true);
 
 	@ArchTest
-	static final ArchRule coreIsFrameworkFree = classes()
-			.that().resideInAnyPackage("..domain..", "..application..")
+	static final ArchRule domainIsFrameworkFree = classes()
+			.that().resideInAPackage("..domain..")
 			.should().onlyDependOnClassesThat()
-			.resideInAnyPackage("java..", "org.jspecify..", "..domain..", "..application..")
+			.resideInAnyPackage("java..", "org.jspecify..", "..domain..")
+			.allowEmptyShould(true);
+
+	/**
+	 * The SLF4J logging facade is the only library allowed besides the domain: it is not a framework and keeps the
+	 * application free of Spring.
+	 */
+	@ArchTest
+	static final ArchRule applicationIsFrameworkFree = classes()
+			.that().resideInAPackage("..application..")
+			.should().onlyDependOnClassesThat()
+			.resideInAnyPackage("java..", "org.jspecify..", "org.slf4j..", "..domain..", "..application..")
 			.allowEmptyShould(true);
 
 	@ArchTest
