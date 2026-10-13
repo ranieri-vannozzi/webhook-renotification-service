@@ -1,0 +1,195 @@
+{
+  "documents": [
+    {
+      "requestId": "D-001",
+      "customerId": "CUST-A",
+      "currentVersion": 3,
+      "versions": [
+        { "version": 1, "updatedAt": "2026-09-01T09:00:00Z", "amount": "1200.00", "currency": "EUR" },
+        { "version": 2, "updatedAt": "2026-09-01T09:05:00Z", "amount": "1200.00", "currency": "EUR" },
+        { "version": 3, "updatedAt": "2026-09-02T14:30:00Z", "amount": "1200.00", "currency": "EUR" }
+      ]
+    },
+    {
+      "requestId": "D-002",
+      "customerId": "CUST-A",
+      "currentVersion": 4,
+      "versions": [
+        { "version": 1, "updatedAt": "2026-09-03T08:00:00Z", "amount": "80.50", "currency": "EUR" },
+        { "version": 2, "updatedAt": "2026-09-03T08:02:00Z", "amount": "80.50", "currency": "EUR" },
+        { "version": 3, "updatedAt": "2026-09-04T10:00:00Z", "amount": "80.50", "currency": "EUR" },
+        { "version": 4, "updatedAt": "2026-09-05T16:45:00Z", "amount": "75.00", "currency": "EUR" }
+      ]
+    },
+    {
+      "requestId": "D-003",
+      "customerId": "CUST-B",
+      "currentVersion": 2,
+      "versions": [
+        { "version": 1, "updatedAt": "2026-09-06T11:00:00Z", "amount": "9300.00", "currency": "PLN" },
+        { "version": 2, "updatedAt": "2026-09-06T11:10:00Z", "amount": "9300.00", "currency": "PLN" }
+      ]
+    },
+    {
+      "requestId": "D-004",
+      "customerId": "CUST-B",
+      "currentVersion": 2,
+      "versions": [
+        { "version": 1, "updatedAt": "2026-09-07T07:30:00Z", "amount": "410.00", "currency": "PLN" },
+        { "version": 2, "updatedAt": "2026-09-07T07:31:00Z", "amount": "410.00", "currency": "PLN" }
+      ]
+    },
+    {
+      "requestId": "D-005",
+      "customerId": "CUST-C",
+      "currentVersion": 1,
+      "versions": [
+        { "version": 1, "updatedAt": "2026-09-08T12:00:00Z", "amount": "55.20", "currency": "EUR" }
+      ]
+    },
+    {
+      "requestId": "D-006",
+      "customerId": "CUST-D",
+      "currentVersion": 2,
+      "versions": [
+        { "version": 1, "updatedAt": "2026-09-09T15:00:00Z", "amount": "3000.00", "currency": "EUR" },
+        { "version": 2, "updatedAt": "2026-09-09T15:20:00Z", "amount": "3000.00", "currency": "EUR" }
+      ]
+    },
+    {
+      "requestId": "D-007",
+      "customerId": "CUST-A",
+      "currentVersion": 3,
+      "versions": [
+        { "version": 1, "updatedAt": "2026-09-10T09:00:00Z", "amount": "640.00", "currency": "EUR" },
+        { "version": 3, "updatedAt": "2026-09-11T09:00:00Z", "amount": "640.00", "currency": "EUR" }
+      ]
+    },
+    {
+      "requestId": "D-008",
+      "customerId": "CUST-B",
+      "currentVersion": 3,
+      "versions": [
+        { "version": 1, "updatedAt": "2026-09-12T10:00:00Z", "amount": "1500.00", "currency": "PLN" },
+        { "version": 2, "updatedAt": "2026-09-12T10:04:00Z", "amount": "1500.00", "currency": "PLN" },
+        { "version": 3, "updatedAt": "2026-09-13T08:15:00Z", "amount": "1500.00", "currency": "PLN" }
+      ]
+    }
+  ],
+  "containers": [
+    {
+      "containerId": "C-001",
+      "documentRequestId": "D-001",
+      "status": "ACCEPTED",
+      "documentVersion": 3,
+      "history": [
+        { "status": "SENT", "documentVersion": 1, "changedAt": "2026-09-01T09:00:10Z" },
+        { "status": "DELIVERED", "documentVersion": 2, "changedAt": "2026-09-01T09:05:10Z" },
+        { "status": "ACCEPTED", "documentVersion": 3, "changedAt": "2026-09-02T14:30:10Z" }
+      ]
+    },
+    {
+      "containerId": "C-002",
+      "documentRequestId": "D-002",
+      "status": "DELIVERED",
+      "documentVersion": 3,
+      "history": [
+        { "status": "SENT", "documentVersion": 1, "changedAt": "2026-09-03T08:00:10Z" },
+        { "status": "SENT", "documentVersion": 2, "changedAt": "2026-09-03T08:02:10Z" },
+        { "status": "DELIVERED", "documentVersion": 3, "changedAt": "2026-09-04T10:00:10Z" }
+      ]
+    },
+    {
+      "containerId": "C-003",
+      "documentRequestId": "D-003",
+      "status": "DELIVERED",
+      "documentVersion": 2,
+      "history": [
+        { "status": "SENT", "documentVersion": 1, "changedAt": "2026-09-06T11:00:10Z" },
+        { "status": "DELIVERED", "documentVersion": 2, "changedAt": "2026-09-06T11:10:10Z" }
+      ]
+    },
+    {
+      "containerId": "C-003B",
+      "documentRequestId": "D-003",
+      "status": "REJECTED",
+      "documentVersion": 2,
+      "history": [
+        { "status": "SENT", "documentVersion": 1, "changedAt": "2026-09-06T11:00:12Z" },
+        { "status": "REJECTED", "documentVersion": 2, "changedAt": "2026-09-06T11:10:12Z" }
+      ]
+    },
+    {
+      "containerId": "C-004",
+      "documentRequestId": "D-004",
+      "status": "DELIVERED",
+      "documentVersion": 2,
+      "history": [
+        { "status": "SENT", "documentVersion": 1, "changedAt": "2026-09-07T07:30:10Z" },
+        { "status": "DELIVERED", "documentVersion": 2, "changedAt": "2026-09-07T07:31:10Z" }
+      ]
+    },
+    {
+      "containerId": "C-005",
+      "documentRequestId": "D-005",
+      "status": "SENT",
+      "documentVersion": 1,
+      "history": [
+        { "status": "SENT", "documentVersion": 1, "changedAt": "2026-09-08T12:00:10Z" }
+      ]
+    },
+    {
+      "containerId": "C-006",
+      "documentRequestId": "D-006",
+      "status": "ACCEPTED",
+      "documentVersion": 2,
+      "history": [
+        { "status": "SENT", "documentVersion": 1, "changedAt": "2026-09-09T15:00:10Z" },
+        { "status": "ACCEPTED", "documentVersion": 2, "changedAt": "2026-09-09T15:20:10Z" }
+      ]
+    },
+    {
+      "containerId": "C-007",
+      "documentRequestId": "D-007",
+      "status": "ACCEPTED",
+      "documentVersion": 3,
+      "history": [
+        { "status": "SENT", "documentVersion": 1, "changedAt": "2026-09-10T09:00:10Z" },
+        { "status": "DELIVERED", "documentVersion": 2, "changedAt": "2026-09-10T18:00:00Z" },
+        { "status": "ACCEPTED", "documentVersion": 3, "changedAt": "2026-09-11T09:00:10Z" }
+      ]
+    },
+    {
+      "containerId": "C-008",
+      "documentRequestId": "D-008",
+      "status": "ACCEPTED",
+      "documentVersion": 3,
+      "history": [
+        { "status": "SENT", "documentVersion": 1, "changedAt": "2026-09-12T10:00:10Z" },
+        { "status": "DELIVERED", "documentVersion": 2, "changedAt": "2026-09-12T10:04:10Z" },
+        { "status": "DELIVERED", "documentVersion": 2, "changedAt": "2026-09-12T19:30:00Z" },
+        { "status": "ACCEPTED", "documentVersion": 3, "changedAt": "2026-09-13T08:15:10Z" }
+      ]
+    }
+  ],
+  "webhookConfigs": [
+    {
+      "customerId": "CUST-A",
+      "enabled": true,
+      "url": "https://hooks.cliente-a.example/einvoice",
+      "auth": { "type": "BASIC" }
+    },
+    {
+      "customerId": "CUST-B",
+      "enabled": true,
+      "url": "https://api.cliente-b.example/v2/notify",
+      "auth": { "type": "OAUTH2" }
+    },
+    {
+      "customerId": "CUST-D",
+      "enabled": false,
+      "url": "https://cliente-d.example/hook",
+      "auth": { "type": "HEADER" }
+    }
+  ]
+}
