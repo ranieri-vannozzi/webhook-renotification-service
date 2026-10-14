@@ -84,6 +84,27 @@ class OneShotControllerTests {
 	}
 
 	@Test
+	void answersAnUnexpectedErrorWithAProblemBodyAndNoInternalDetail() {
+		given(sendOneShot.send(anyList())).willThrow(new IllegalStateException("secret internal detail"));
+
+		assertThat(post("[ { \"requestId\": \"D-001\" } ]"))
+				.hasStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+				.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.bodyText().doesNotContain("secret");
+	}
+
+	@Test
+	void returnsTheCorrelationIdReceivedOrANewOne() {
+		given(sendOneShot.send(anyList())).willReturn(List.of());
+
+		assertThat(post("[]").header(CorrelationIdFilter.X_CORRELATION_ID, "op-tool-123"))
+				.headers().hasValue(CorrelationIdFilter.X_CORRELATION_ID, "op-tool-123");
+		assertThat(post("[]").header(CorrelationIdFilter.X_CORRELATION_ID, "forged\nlog line"))
+				.headers().satisfies(headers -> assertThat(headers.getFirst(CorrelationIdFilter.X_CORRELATION_ID))
+						.isNotBlank().isNotEqualTo("forged\nlog line"));
+	}
+
+	@Test
 	void rejectsABodyThatIsNotJson() {
 		assertThat(mvc.post().uri(ApiRoutes.WEBHOOK_ONESHOT).contentType(MediaType.TEXT_PLAIN).content("D-001"))
 				.hasStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE);

@@ -23,6 +23,7 @@ import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 
 import it.ranierivannozzi.webhook.application.port.in.FailedStep;
 import it.ranierivannozzi.webhook.application.port.in.ItemResult;
@@ -175,6 +176,17 @@ class OneShotServiceTests {
 	}
 
 	@Test
+	void failsOnlyTheItemWhoseStateCannotBeResolved() {
+		ContainerRepository working = containers;
+		containers = id -> id.equals("D-004") ? Arrays.asList((Container) null) : working.findByDocumentRequestId(id);
+
+		List<ItemResult> results = service().send(List.of(item("D-004", null), item("D-001", null)));
+
+		assertFailed(results.get(0), FailedStep.CONTAINER_LOOKUP, "could not resolve the state to notify");
+		assertThat(results.get(1)).isInstanceOf(ItemResult.Queued.class);
+	}
+
+	@Test
 	void failsTheChannelStepWhenTheQueueRejectsTheMessage() {
 		queue = message -> {
 			throw new IllegalStateException("queue full");
@@ -220,6 +232,22 @@ class OneShotServiceTests {
 
 		assertThat(results).hasSize(20);
 		assertThat(peak.get()).isBetween(2, 4);
+	}
+
+	@Test
+	void copiesTheLoggingContextToTheItemThreads() {
+		List<@Nullable String> seen = new CopyOnWriteArrayList<>();
+		queue = message -> seen.add(MDC.get("correlationId"));
+
+		MDC.put("correlationId", "req-42");
+		try {
+			service().send(List.of(item("D-001", null), item("D-004", null)));
+		}
+		finally {
+			MDC.remove("correlationId");
+		}
+
+		assertThat(seen).containsExactly("req-42", "req-42");
 	}
 
 	@Test

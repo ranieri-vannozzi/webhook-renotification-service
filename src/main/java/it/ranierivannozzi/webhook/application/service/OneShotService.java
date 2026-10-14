@@ -1,5 +1,6 @@
 package it.ranierivannozzi.webhook.application.service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,6 +16,9 @@ import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import it.ranierivannozzi.webhook.application.port.in.FailedStep;
 import it.ranierivannozzi.webhook.application.port.in.ItemResult;
@@ -40,7 +44,11 @@ import it.ranierivannozzi.webhook.domain.resolution.Resolution.Resolved;
  * Items run in parallel on virtual threads, each through the three steps in order. A semaphore shared by all
  * requests caps how many items are in flight at once, to protect the document system and the database. Duplicate
  * items (same {@code requestId} and {@code containerStatus}, as sent) are processed once and share the result.
+ * <p>
+ * The logging context of the caller (for example the correlation id of the HTTP request) is copied to the thread of
+ * each item, so every log line of a request can be found together.
  */
+@Service
 public class OneShotService implements SendOneShotUseCase {
 
 	private final Semaphore permits;
@@ -54,7 +62,8 @@ public class OneShotService implements SendOneShotUseCase {
 	 * @param maxConcurrentItems how many items may be processed at the same time across all requests
 	 */
 	public OneShotService(DocumentRepository documents, ContainerRepository containers,
-			WebhookConfigurationRepository configurations, NotificationQueue queue, int maxConcurrentItems) {
+			WebhookConfigurationRepository configurations, NotificationQueue queue,
+			@Value("${oneshot.max-concurrent-items}") int maxConcurrentItems) {
 		if (maxConcurrentItems < 1) {
 			throw new IllegalArgumentException("maxConcurrentItems must be at least 1, was " + maxConcurrentItems);
 		}
@@ -67,17 +76,27 @@ public class OneShotService implements SendOneShotUseCase {
 
 	@Override
 	public List<ItemResult> send(List<OneShotItem> items) {
+		long start = System.nanoTime();
+		@Nullable Map<String, String> logContext = MDC.getCopyOfContextMap();
+		List<ItemResult> results;
 		try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
 			Map<OneShotItem, Future<ItemResult>> distinct = new LinkedHashMap<>();
 			List<Future<ItemResult>> perItem = new ArrayList<>(items.size());
 			for (OneShotItem item : items) {
-				perItem.add(distinct.computeIfAbsent(item, key -> executor.submit(() -> processWithPermit(key))));
+				perItem.add(distinct.computeIfAbsent(item,
+						key -> executor.submit(() -> processWithPermit(key, logContext))));
 			}
-			return perItem.stream().map(OneShotService::await).toList();
+			results = perItem.stream().map(OneShotService::await).toList();
 		}
+		logSummary(results, Duration.ofNanos(System.nanoTime() - start));
+		return results;
 	}
 
-	private ItemResult processWithPermit(OneShotItem item) throws InterruptedException {
+	private ItemResult processWithPermit(OneShotItem item, @Nullable Map<String, String> logContext)
+			throws InterruptedException {
+		if (logContext != null) {
+			MDC.setContextMap(logContext);
+		}
 		permits.acquire();
 		try {
 			ItemResult result = process(item);
@@ -116,7 +135,7 @@ public class OneShotService implements SendOneShotUseCase {
 		List<Container> documentContainers = call(FailedStep.CONTAINER_LOOKUP, "container",
 				() -> containers.findByDocumentRequestId(requestId));
 
-		Resolved resolved = switch (DocumentStateResolver.resolve(document, documentContainers, requestedStatus)) {
+		Resolved resolved = switch (resolve(document, documentContainers, requestedStatus)) {
 			case Resolution.Failed failed -> throw new ItemFailure(stepOf(failed), failed.message());
 			case Resolved ok -> ok;
 		};
@@ -183,6 +202,21 @@ public class OneShotService implements SendOneShotUseCase {
 		});
 	}
 
+	/**
+	 * Applies the domain rules of step 1. They only read the data already loaded, so an exception here is a bug:
+	 * it fails this item, not the whole request, since the other items may already be on the queue.
+	 */
+	private static Resolution resolve(Document document, List<Container> documentContainers,
+			@Nullable ContainerStatus requestedStatus) {
+		try {
+			return DocumentStateResolver.resolve(document, documentContainers, requestedStatus);
+		}
+		catch (RuntimeException e) {
+			log.error("Could not resolve the state of document {}", document.requestId(), e);
+			throw new ItemFailure(FailedStep.CONTAINER_LOOKUP, "could not resolve the state to notify");
+		}
+	}
+
 	private static FailedStep stepOf(Resolution.Failed failed) {
 		return switch (failed.reason()) {
 			case DOCUMENT_HAS_NO_VERSIONS, DOCUMENT_VERSION_NOT_FOUND -> FailedStep.DOCUMENT_LOOKUP;
@@ -208,6 +242,12 @@ public class OneShotService implements SendOneShotUseCase {
 			case ItemResult.Failed failed -> log.info("One-shot item {} failed at {}: {}", failed.item(),
 					failed.step(), failed.error());
 		}
+	}
+
+	private static void logSummary(List<ItemResult> results, Duration elapsed) {
+		long queued = results.stream().filter(result -> result instanceof ItemResult.Queued).count();
+		log.info("One-shot request of {} items done in {} ms: {} queued, {} failed", results.size(),
+				elapsed.toMillis(), queued, results.size() - queued);
 	}
 
 	private static ItemResult await(Future<ItemResult> result) {

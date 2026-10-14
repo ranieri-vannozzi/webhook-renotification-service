@@ -16,7 +16,7 @@ class InMemoryRepositoriesTests {
 
 	@Test
 	void findsDocumentsByRequestId() {
-		InMemoryDocumentRepository documents = new InMemoryDocumentRepository(dataset.documents());
+		InMemoryDocumentRepository documents = new InMemoryDocumentRepository(dataset, SimulatedLatency.NONE);
 
 		assertThat(documents.findByRequestId("D-001")).hasValueSatisfying(d -> assertThat(d.customerId()).isEqualTo("CUST-A"));
 		assertThat(documents.findByRequestId("D-999")).isEmpty();
@@ -24,7 +24,7 @@ class InMemoryRepositoriesTests {
 
 	@Test
 	void findsEveryContainerOfADocument() {
-		InMemoryContainerRepository containers = new InMemoryContainerRepository(dataset.containers());
+		InMemoryContainerRepository containers = new InMemoryContainerRepository(dataset, SimulatedLatency.NONE);
 
 		assertThat(containers.findByDocumentRequestId("D-003")).extracting(Container::containerId)
 				.containsExactly("C-003", "C-003B");
@@ -33,8 +33,8 @@ class InMemoryRepositoriesTests {
 
 	@Test
 	void findsWebhookConfigurationsByCustomer() {
-		InMemoryWebhookConfigurationRepository configurations = new InMemoryWebhookConfigurationRepository(
-				dataset.webhookConfigurations());
+		InMemoryWebhookConfigurationRepository configurations = new InMemoryWebhookConfigurationRepository(dataset,
+				SimulatedLatency.NONE);
 
 		assertThat(configurations.findByCustomerId("CUST-B")).isPresent();
 		assertThat(configurations.findByCustomerId("CUST-C")).isEmpty();

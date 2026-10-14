@@ -1,7 +1,26 @@
 spring:
   application:
     name: webhook.oneshot
-  mvc:
-    problemdetails:
-      # Malformed requests get an RFC 9457 problem body instead of the default error page
+  threads:
+    virtual:
+      # Requests are served on virtual threads, as in the rest of the platform
       enabled: true
+
+logging:
+  pattern:
+    # Every log line of a request carries its correlation id from MDC (Mapped Diagnostic Context, see CorrelationIdFilter)
+    correlation: "[%X{correlationId:-}] "
+
+# Settings of the one-shot service, read with @Value by the classes that use them
+oneshot:
+  # Source data, read at startup (OneShotConfiguration)
+  dataset: classpath:dataset/dataset.json
+  # Items processed at the same time across all requests (OneShotService)
+  max-concurrent-items: 16
+  # Simulated latency of the document system and the database (SimulatedLatency)
+  source-latency-min: 5ms
+  source-latency-max: 2s
+  # Deliveries of a queued notification before the dead letters, and wait before the first retry, doubled at each
+  # further one (InMemoryNotificationQueue)
+  queue-max-attempts: 5
+  queue-initial-backoff: 30s

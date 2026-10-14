@@ -14,9 +14,10 @@ import it.ranierivannozzi.webhook.adapter.out.queue.InMemoryNotificationQueue;
 import it.ranierivannozzi.webhook.domain.model.ContainerStatus;
 
 /**
- * The whole application on the provided dataset, from the HTTP request to the internal queue.
+ * The whole application on the provided dataset, from the HTTP request to the internal queue. The simulated latency
+ * of the sources is turned off to keep the test fast.
  */
-@SpringBootTest
+@SpringBootTest(properties = { "oneshot.source-latency-min=0ms", "oneshot.source-latency-max=0ms" })
 @AutoConfigureMockMvc
 class OneShotEndToEndTests {
 

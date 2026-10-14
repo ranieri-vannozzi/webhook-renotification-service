@@ -20,7 +20,8 @@ import com.tngtech.archunit.lang.ArchRule;
 class ArchitectureTests {
 
 	/**
-	 * The config package is the composition root: it is the one place allowed to know every layer, to wire them.
+	 * The config package declares the beans that are not components, such as the dataset read by the dataset adapter,
+ * so it is allowed to know every layer.
 	 */
 	@ArchTest
 	static final ArchRule hexagonalLayers = onionArchitecture()
@@ -41,14 +42,15 @@ class ArchitectureTests {
 			.allowEmptyShould(true);
 
 	/**
-	 * The SLF4J logging facade is the only library allowed besides the domain: it is not a framework and keeps the
-	 * application free of Spring.
+	 * Besides the domain, the application may use the SLF4J logging facade and the Spring annotations that declare
+	 * and configure a bean, but nothing else of Spring (web, Jackson, ...): HTTP and JSON stay in the adapters.
 	 */
 	@ArchTest
-	static final ArchRule applicationIsFrameworkFree = classes()
+	static final ArchRule applicationUsesOnlyBeanAnnotations = classes()
 			.that().resideInAPackage("..application..")
 			.should().onlyDependOnClassesThat()
-			.resideInAnyPackage("java..", "org.jspecify..", "org.slf4j..", "..domain..", "..application..")
+			.resideInAnyPackage("java..", "org.jspecify..", "org.slf4j..", "org.springframework.stereotype..",
+					"org.springframework.beans.factory.annotation..", "..domain..", "..application..")
 			.allowEmptyShould(true);
 
 	@ArchTest

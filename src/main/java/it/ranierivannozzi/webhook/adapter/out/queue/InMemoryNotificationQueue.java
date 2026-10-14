@@ -16,6 +16,8 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import it.ranierivannozzi.webhook.application.port.out.NotificationQueue;
 import it.ranierivannozzi.webhook.domain.model.NotificationMessage;
@@ -29,6 +31,7 @@ import it.ranierivannozzi.webhook.domain.model.NotificationMessage;
  * exponential backoff ({@code initialBackoff}, then twice as long at each attempt); after {@code maxAttempts}
  * deliveries the message goes to the dead letters. All methods are safe to call from several threads.
  */
+@Component
 public class InMemoryNotificationQueue implements NotificationQueue {
 
 	private final int maxAttempts;
@@ -45,7 +48,8 @@ public class InMemoryNotificationQueue implements NotificationQueue {
 	 * @param maxAttempts how many deliveries a message gets before going to the dead letters
 	 * @param initialBackoff how long the first retry waits, doubled at each further one
 	 */
-	public InMemoryNotificationQueue(InstantSource clock, int maxAttempts, Duration initialBackoff) {
+	public InMemoryNotificationQueue(InstantSource clock, @Value("${oneshot.queue-max-attempts}") int maxAttempts,
+			@Value("${oneshot.queue-initial-backoff}") Duration initialBackoff) {
 		if (maxAttempts < 1) {
 			throw new IllegalArgumentException("maxAttempts must be at least 1, was " + maxAttempts);
 		}

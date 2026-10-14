@@ -4,22 +4,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Repository;
+
 import it.ranierivannozzi.webhook.application.port.out.ContainerRepository;
 import it.ranierivannozzi.webhook.domain.model.Container;
 
 /**
- * Containers of the dataset, grouped by the document they belong to. Read-only.
+ * Containers of the dataset, grouped by the document they belong to. Read-only; every call waits the simulated
+ * latency.
  */
+@Repository
 public class InMemoryContainerRepository implements ContainerRepository {
 
+	private final SimulatedLatency latency;
 	private final Map<String, List<Container>> byDocument;
 
-	public InMemoryContainerRepository(List<Container> containers) {
-		this.byDocument = containers.stream().collect(Collectors.groupingBy(Container::documentRequestId));
+	public InMemoryContainerRepository(Dataset dataset, SimulatedLatency latency) {
+		this.latency = latency;
+		this.byDocument = dataset.containers().stream().collect(Collectors.groupingBy(Container::documentRequestId));
 	}
 
 	@Override
 	public List<Container> findByDocumentRequestId(String requestId) {
+		latency.pause();
 		return List.copyOf(byDocument.getOrDefault(requestId, List.of()));
 	}
 
