@@ -1,5 +1,7 @@
 package it.ranierivannozzi.webhook.config;
 
+import java.time.InstantSource;
+
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,8 +49,9 @@ class OneShotConfiguration {
 	}
 
 	@Bean
-	InMemoryNotificationQueue notificationQueue() {
-		return new InMemoryNotificationQueue();
+	InMemoryNotificationQueue notificationQueue(OneShotProperties properties) {
+		return new InMemoryNotificationQueue(InstantSource.system(), properties.queueMaxAttempts(),
+				properties.queueInitialBackoff());
 	}
 
 	@Bean
