@@ -16,12 +16,12 @@ import it.ranierivannozzi.webhook.domain.model.Document;
 public class InMemoryDocumentRepository implements DocumentRepository {
 
 	private final SimulatedLatency latency;
-	private final Map<String, Document> byRequestId = new HashMap<>();
+	private final Map<String, Document> byRequestIdMap = new HashMap<>();
 
 	public InMemoryDocumentRepository(Dataset dataset, SimulatedLatency latency) {
 		this.latency = latency;
 		for (Document document : dataset.documents()) {
-			if (byRequestId.putIfAbsent(document.requestId(), document) != null) {
+			if (byRequestIdMap.putIfAbsent(document.requestId(), document) != null) {
 				throw new InvalidDatasetException("Duplicate document " + document.requestId());
 			}
 		}
@@ -30,7 +30,7 @@ public class InMemoryDocumentRepository implements DocumentRepository {
 	@Override
 	public Optional<Document> findByRequestId(String requestId) {
 		latency.pause();
-		return Optional.ofNullable(byRequestId.get(requestId));
+		return Optional.ofNullable(byRequestIdMap.get(requestId));
 	}
 
 }

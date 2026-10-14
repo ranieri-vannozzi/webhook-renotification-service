@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-import org.jspecify.annotations.Nullable;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -44,7 +43,7 @@ class CorrelationIdFilter extends OncePerRequestFilter {
 	}
 
 	private static String correlationIdOf(HttpServletRequest request) {
-		@Nullable String correlationId = request.getHeader(X_CORRELATION_ID);
+		String correlationId = request.getHeader(X_CORRELATION_ID);
 		if (correlationId != null && VALID_ID.matcher(correlationId).matches()) {
 			return correlationId;
 		}

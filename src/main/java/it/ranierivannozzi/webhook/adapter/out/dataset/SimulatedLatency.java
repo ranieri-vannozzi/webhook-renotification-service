@@ -16,7 +16,7 @@ public class SimulatedLatency {
 	/**
 	 * No wait at all, for tests that do not care about timing.
 	 */
-	public static final SimulatedLatency NONE = new SimulatedLatency(Duration.ZERO, Duration.ZERO);
+	public static final SimulatedLatency ZERO_LATENCY = new SimulatedLatency(Duration.ZERO, Duration.ZERO);
 
 	private final long minMillis;
 	private final long maxMillis;
@@ -36,6 +36,7 @@ public class SimulatedLatency {
 	 * @throws IllegalStateException if the thread is interrupted while waiting
 	 */
 	public void pause() {
+		// A random number of milliseconds between min and max, both included: the upper bound of nextLong is excluded
 		long millis = ThreadLocalRandom.current().nextLong(minMillis, maxMillis + 1);
 		if (millis == 0) {
 			return;

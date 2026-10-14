@@ -1,7 +1,6 @@
 package it.ranierivannozzi.webhook.adapter.out.queue;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -43,28 +42,17 @@ class InMemoryNotificationQueueTests {
 	}
 
 	@Test
-	void forgetsAnAcknowledgedMessage() {
-		queue.enqueue(message("D-001"));
-		QueuedNotification delivered = queue.poll().orElseThrow();
-
-		queue.acknowledge(delivered.id());
-
-		assertThat(queue.poll()).isEmpty();
-		assertThatIllegalArgumentException().isThrownBy(() -> queue.retry(delivered.id()));
-	}
-
-	@Test
 	void retriesWithTheSameIdAfterAnExponentialBackoff() {
 		queue.enqueue(message("D-001"));
 		QueuedNotification first = queue.poll().orElseThrow();
 
-		queue.retry(first.id());
+		queue.retry(first);
 		advance(BACKOFF.minusSeconds(1));
 		assertThat(queue.poll()).isEmpty();
 		advance(Duration.ofSeconds(1));
 		QueuedNotification second = queue.poll().orElseThrow();
 
-		queue.retry(second.id());
+		queue.retry(second);
 		advance(BACKOFF.multipliedBy(2).minusSeconds(1));
 		assertThat(queue.poll()).isEmpty();
 		advance(Duration.ofSeconds(1));
@@ -82,7 +70,7 @@ class InMemoryNotificationQueueTests {
 
 		for (int attempt = 1; attempt <= 3; attempt++) {
 			advance(Duration.ofHours(1));
-			queue.retry(queue.poll().orElseThrow().id());
+			queue.retry(queue.poll().orElseThrow());
 		}
 
 		advance(Duration.ofHours(1));
@@ -91,14 +79,6 @@ class InMemoryNotificationQueueTests {
 			assertThat(dead.attempt()).isEqualTo(3);
 			assertThat(dead.message().requestId()).isEqualTo("D-001");
 		});
-	}
-
-	@Test
-	void rejectsAnIdThatIsNotBeingDelivered() {
-		queue.enqueue(message("D-001"));
-
-		assertThatIllegalArgumentException().isThrownBy(() -> queue.acknowledge("unknown"));
-		assertThatIllegalArgumentException().isThrownBy(() -> queue.retry("unknown"));
 	}
 
 	private void advance(Duration duration) {

@@ -16,12 +16,12 @@ import it.ranierivannozzi.webhook.domain.model.WebhookConfiguration;
 public class InMemoryWebhookConfigurationRepository implements WebhookConfigurationRepository {
 
 	private final SimulatedLatency latency;
-	private final Map<String, WebhookConfiguration> byCustomer = new HashMap<>();
+	private final Map<String, WebhookConfiguration> byCustomerMap = new HashMap<>();
 
 	public InMemoryWebhookConfigurationRepository(Dataset dataset, SimulatedLatency latency) {
 		this.latency = latency;
 		for (WebhookConfiguration configuration : dataset.webhookConfigurations()) {
-			if (byCustomer.putIfAbsent(configuration.customerId(), configuration) != null) {
+			if (byCustomerMap.putIfAbsent(configuration.customerId(), configuration) != null) {
 				throw new InvalidDatasetException("Duplicate webhook configuration for " + configuration.customerId());
 			}
 		}
@@ -30,7 +30,7 @@ public class InMemoryWebhookConfigurationRepository implements WebhookConfigurat
 	@Override
 	public Optional<WebhookConfiguration> findByCustomerId(String customerId) {
 		latency.pause();
-		return Optional.ofNullable(byCustomer.get(customerId));
+		return Optional.ofNullable(byCustomerMap.get(customerId));
 	}
 
 }

@@ -17,17 +17,17 @@ import it.ranierivannozzi.webhook.domain.model.Container;
 public class InMemoryContainerRepository implements ContainerRepository {
 
 	private final SimulatedLatency latency;
-	private final Map<String, List<Container>> byDocument;
+	private final Map<String, List<Container>> byDocumentMap;
 
 	public InMemoryContainerRepository(Dataset dataset, SimulatedLatency latency) {
 		this.latency = latency;
-		this.byDocument = dataset.containers().stream().collect(Collectors.groupingBy(Container::documentRequestId));
+		this.byDocumentMap = dataset.containers().stream().collect(Collectors.groupingBy(Container::documentRequestId));
 	}
 
 	@Override
 	public List<Container> findByDocumentRequestId(String requestId) {
 		latency.pause();
-		return List.copyOf(byDocument.getOrDefault(requestId, List.of()));
+		return List.copyOf(byDocumentMap.getOrDefault(requestId, List.of()));
 	}
 
 }
