@@ -1,51 +1,45 @@
 package it.ranierivannozzi.webhook.adapter.out.dataset;
 
+import java.math.BigDecimal;
+import java.net.URI;
+import java.time.Instant;
+import java.util.Currency;
 import java.util.List;
 
-import org.jspecify.annotations.Nullable;
+import it.ranierivannozzi.webhook.domain.model.ContainerStatus;
+import it.ranierivannozzi.webhook.domain.model.WebhookAuthType;
 
 /**
- * The shape of dataset.json. Every value is nullable and kept as it appears in the file: the dataset is external data,
- * validated and converted to the domain model by {@link DatasetLoader}.
+ * The shape of dataset.json, read by Jackson. Jackson converts every value to its type and rejects a missing or null
+ * one (see {@link DatasetLoader}); the records are then copied to the domain model, which stays independent of the
+ * file format.
  */
 record DatasetJson(
-		@Nullable List<@Nullable DocumentJson> documents,
-		@Nullable List<@Nullable ContainerJson> containers,
-		@Nullable List<@Nullable WebhookConfigJson> webhookConfigs) {
+		List<DocumentJson> documents,
+		List<ContainerJson> containers,
+		List<WebhookConfigJson> webhookConfigs) {
 
-	record DocumentJson(
-			@Nullable String requestId,
-			@Nullable String customerId,
-			@Nullable Integer currentVersion,
-			@Nullable List<@Nullable VersionJson> versions) {
+	record DocumentJson(String requestId, String customerId, int currentVersion, List<VersionJson> versions) {
 	}
 
-	record VersionJson(
-			@Nullable Integer version,
-			@Nullable String updatedAt,
-			@Nullable String amount,
-			@Nullable String currency) {
+	record VersionJson(int version, Instant updatedAt, BigDecimal amount, Currency currency) {
 	}
 
 	record ContainerJson(
-			@Nullable String containerId,
-			@Nullable String documentRequestId,
-			@Nullable String status,
-			@Nullable Integer documentVersion,
-			@Nullable List<@Nullable SnapshotJson> history) {
+			String containerId,
+			String documentRequestId,
+			ContainerStatus status,
+			int documentVersion,
+			List<SnapshotJson> history) {
 	}
 
-	record SnapshotJson(@Nullable String status, @Nullable Integer documentVersion, @Nullable String changedAt) {
+	record SnapshotJson(ContainerStatus status, int documentVersion, Instant changedAt) {
 	}
 
-	record WebhookConfigJson(
-			@Nullable String customerId,
-			@Nullable Boolean enabled,
-			@Nullable String url,
-			@Nullable AuthJson auth) {
+	record WebhookConfigJson(String customerId, boolean enabled, URI url, AuthJson auth) {
 	}
 
-	record AuthJson(@Nullable String type) {
+	record AuthJson(WebhookAuthType type) {
 	}
 
 }
