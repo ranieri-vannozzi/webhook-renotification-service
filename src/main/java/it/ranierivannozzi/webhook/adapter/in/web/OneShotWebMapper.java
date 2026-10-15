@@ -24,12 +24,12 @@ final class OneShotWebMapper {
 	}
 
 	static OneShotItemResponse toResponse(ItemResult result) {
-		OneShotItem item = result.item();
+		OneShotItem originalItem = result.originalItem();
 		return switch (result) {
-			case ItemResult.Queued queued -> new OneShotItemResponse(item.requestId(), item.containerStatus(),
-					Outcome.QUEUED, null, null);
-			case ItemResult.Failed failed -> new OneShotItemResponse(item.requestId(), item.containerStatus(),
-					Outcome.FAILED, failed.step(), failed.error());
+			case ItemResult.Queued queued -> new OneShotItemResponse(originalItem.requestId(),
+					originalItem.containerStatus(), Outcome.QUEUED, null, null);
+			case ItemResult.Failed failed -> new OneShotItemResponse(originalItem.requestId(),
+					originalItem.containerStatus(), Outcome.FAILED, failed.step(), failed.error());
 		};
 	}
 

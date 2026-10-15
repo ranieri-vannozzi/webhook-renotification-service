@@ -113,7 +113,7 @@ class OneShotServiceTests {
 
 		List<ItemResult> results = service().send(items);
 
-		assertThat(results).extracting(ItemResult::item).containsExactlyElementsOf(items);
+		assertThat(results).extracting(ItemResult::originalItem).containsExactlyElementsOf(items);
 		assertThat(results.get(0)).isInstanceOf(ItemResult.Queued.class);
 		assertThat(results.get(1)).isInstanceOf(ItemResult.Queued.class);
 		assertFailed(results.get(2), FailedStep.DOCUMENT_LOOKUP, "document not found");
@@ -206,7 +206,7 @@ class OneShotServiceTests {
 
 		List<ItemResult> results = service().send(items);
 
-		assertThat(results).extracting(ItemResult::item).containsExactlyElementsOf(items);
+		assertThat(results).extracting(ItemResult::originalItem).containsExactlyElementsOf(items);
 		assertThat(results).extracting(result -> result.getClass().getSimpleName())
 				.containsExactly("Queued", "Queued", "Failed", "Failed", "Queued");
 		assertThat(documentLookups.get("D-999")).hasValue(1);

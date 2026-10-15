@@ -241,8 +241,8 @@ public class OneShotService implements OneShotServicePort {
 
 	private static void logResult(ItemResult result) {
 		switch (result) {
-			case ItemResult.Queued queued -> log.info("One-shot item {} queued", queued.item());
-			case ItemResult.Failed failed -> log.info("One-shot item {} failed at {}: {}", failed.item(),
+			case ItemResult.Queued queued -> log.info("One-shot item {} queued", queued.originalItem());
+			case ItemResult.Failed failed -> log.info("One-shot item {} failed at {}: {}", failed.originalItem(),
 					failed.step(), failed.error());
 		}
 	}
