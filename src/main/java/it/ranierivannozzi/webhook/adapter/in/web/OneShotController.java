@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.ranierivannozzi.webhook.application.port.in.OneShotItem;
-import it.ranierivannozzi.webhook.application.port.in.SendOneShotUseCase;
+import it.ranierivannozzi.webhook.application.port.in.OneShotServicePort;
 
 /**
  * {@code POST /v1/webhook/oneshot}: answers 200 with one result per element, in the same order.
@@ -20,17 +20,17 @@ import it.ranierivannozzi.webhook.application.port.in.SendOneShotUseCase;
 @RestController
 class OneShotController {
 
-	private final SendOneShotUseCase sendOneShot;
+	private final OneShotServicePort servicePort;
 
-	OneShotController(SendOneShotUseCase sendOneShot) {
-		this.sendOneShot = sendOneShot;
+	OneShotController(OneShotServicePort servicePort) {
+		this.servicePort = servicePort;
 	}
 
 	@PostMapping(path = ApiRoutes.WEBHOOK_ONESHOT, consumes = MediaType.APPLICATION_JSON_VALUE,
 			produces = MediaType.APPLICATION_JSON_VALUE)
 	List<OneShotItemResponse> send(@RequestBody List<@Nullable OneShotItemRequest> body) {
 		List<OneShotItem> items = body.stream().map(OneShotWebMapper::toItem).toList();
-		return sendOneShot.send(items).stream().map(OneShotWebMapper::toResponse).toList();
+		return servicePort.send(items).stream().map(OneShotWebMapper::toResponse).toList();
 	}
 
 }

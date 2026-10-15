@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 
-import it.ranierivannozzi.webhook.application.port.out.ContainerRepository;
+import it.ranierivannozzi.webhook.application.port.out.ContainerRepositoryPort;
 import it.ranierivannozzi.webhook.domain.model.Container;
 
 /**
@@ -14,7 +14,7 @@ import it.ranierivannozzi.webhook.domain.model.Container;
  * latency.
  */
 @Repository
-public class InMemoryContainerRepository implements ContainerRepository {
+public class InMemoryContainerRepository implements ContainerRepositoryPort {
 
 	private final SimulatedLatency latency;
 	private final Map<String, List<Container>> byDocumentMap;

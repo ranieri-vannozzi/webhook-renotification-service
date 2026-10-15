@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import it.ranierivannozzi.webhook.application.port.in.FailedStep;
 import it.ranierivannozzi.webhook.application.port.in.ItemResult;
 import it.ranierivannozzi.webhook.application.port.in.OneShotItem;
-import it.ranierivannozzi.webhook.application.port.in.SendOneShotUseCase;
+import it.ranierivannozzi.webhook.application.port.in.OneShotServicePort;
 
 /**
  * The HTTP contract only: the use case is mocked.
@@ -31,14 +31,14 @@ class OneShotControllerTests {
 	private MockMvcTester mvc;
 
 	@MockitoBean
-	private SendOneShotUseCase sendOneShot;
+	private OneShotServicePort servicePort;
 
 	@Test
 	void writesOnlyTheFieldsTheContractDefinesForEachOutcome() {
 		OneShotItem queued = new OneShotItem("D-001", null);
 		OneShotItem failed = new OneShotItem("D-004", "delivered");
 		OneShotItem withoutId = new OneShotItem(null, "SENT");
-		given(sendOneShot.send(List.of(queued, failed, withoutId))).willReturn(List.of(
+		given(servicePort.send(List.of(queued, failed, withoutId))).willReturn(List.of(
 				new ItemResult.Queued(queued),
 				new ItemResult.Failed(failed, FailedStep.CONTAINER_LOOKUP, "unknown container status 'delivered'"),
 				new ItemResult.Failed(withoutId, FailedStep.DOCUMENT_LOOKUP, "requestId is missing")));
@@ -59,7 +59,7 @@ class OneShotControllerTests {
 	@Test
 	void turnsANullElementIntoAnItemWithoutRequestId() {
 		OneShotItem empty = new OneShotItem(null, null);
-		given(sendOneShot.send(List.of(empty))).willReturn(List.of(
+		given(servicePort.send(List.of(empty))).willReturn(List.of(
 				new ItemResult.Failed(empty, FailedStep.DOCUMENT_LOOKUP, "requestId is missing")));
 
 		assertThat(post("[ null ]")).hasStatusOk().bodyJson().isStrictlyEqualTo("""
@@ -70,7 +70,7 @@ class OneShotControllerTests {
 
 	@Test
 	void answersAnEmptyListWithAnEmptyList() {
-		given(sendOneShot.send(List.of())).willReturn(List.of());
+		given(servicePort.send(List.of())).willReturn(List.of());
 
 		assertThat(post("[]")).hasStatusOk().bodyJson().isStrictlyEqualTo("[]");
 	}
@@ -80,12 +80,12 @@ class OneShotControllerTests {
 		assertThat(post("{ \"requestId\": \"D-001\" }")).hasStatus(HttpStatus.BAD_REQUEST);
 		assertThat(post("not json")).hasStatus(HttpStatus.BAD_REQUEST);
 		assertThat(post("")).hasStatus(HttpStatus.BAD_REQUEST);
-		verify(sendOneShot, never()).send(anyList());
+		verify(servicePort, never()).send(anyList());
 	}
 
 	@Test
 	void answersAnUnexpectedErrorWithAProblemBodyAndNoInternalDetail() {
-		given(sendOneShot.send(anyList())).willThrow(new IllegalStateException("secret internal detail"));
+		given(servicePort.send(anyList())).willThrow(new IllegalStateException("secret internal detail"));
 
 		assertThat(post("[ { \"requestId\": \"D-001\" } ]"))
 				.hasStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -95,7 +95,7 @@ class OneShotControllerTests {
 
 	@Test
 	void returnsTheCorrelationIdReceivedOrANewOne() {
-		given(sendOneShot.send(anyList())).willReturn(List.of());
+		given(servicePort.send(anyList())).willReturn(List.of());
 
 		assertThat(post("[]").header(CorrelationIdFilter.X_CORRELATION_ID, "op-tool-123"))
 				.headers().hasValue(CorrelationIdFilter.X_CORRELATION_ID, "op-tool-123");

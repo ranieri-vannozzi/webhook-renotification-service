@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import it.ranierivannozzi.webhook.application.port.out.NotificationQueue;
+import it.ranierivannozzi.webhook.application.port.out.NotificationQueuePort;
 import it.ranierivannozzi.webhook.domain.model.NotificationMessage;
 
 /**
@@ -41,7 +41,7 @@ import it.ranierivannozzi.webhook.domain.model.NotificationMessage;
  * A delivered message needs no further call: it already left the queue at step 2.
  */
 @Component
-public class InMemoryNotificationQueue implements NotificationQueue {
+public class InMemoryNotificationQueue implements NotificationQueuePort {
 
 	private final int maxAttempts;
 	private final Duration initialBackoff;

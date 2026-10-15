@@ -6,14 +6,14 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
-import it.ranierivannozzi.webhook.application.port.out.WebhookConfigurationRepository;
+import it.ranierivannozzi.webhook.application.port.out.WebhookConfigurationRepositoryPort;
 import it.ranierivannozzi.webhook.domain.model.WebhookConfiguration;
 
 /**
  * Webhook configurations of the dataset, indexed by customer. Read-only; every call waits the simulated latency.
  */
 @Repository
-public class InMemoryWebhookConfigurationRepository implements WebhookConfigurationRepository {
+public class InMemoryWebhookConfigurationRepository implements WebhookConfigurationRepositoryPort {
 
 	private final SimulatedLatency latency;
 	private final Map<String, WebhookConfiguration> byCustomerMap = new HashMap<>();

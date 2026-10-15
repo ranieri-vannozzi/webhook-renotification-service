@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Re-sends the webhook notification for a list of documents on an operator's request.
  */
-public interface SendOneShotUseCase {
+public interface OneShotServicePort {
 
 	/**
 	 * Processes every item independently: a failing item does not stop the others.

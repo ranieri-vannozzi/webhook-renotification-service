@@ -23,11 +23,11 @@ import org.springframework.stereotype.Service;
 import it.ranierivannozzi.webhook.application.port.in.FailedStep;
 import it.ranierivannozzi.webhook.application.port.in.ItemResult;
 import it.ranierivannozzi.webhook.application.port.in.OneShotItem;
-import it.ranierivannozzi.webhook.application.port.in.SendOneShotUseCase;
-import it.ranierivannozzi.webhook.application.port.out.ContainerRepository;
-import it.ranierivannozzi.webhook.application.port.out.DocumentRepository;
-import it.ranierivannozzi.webhook.application.port.out.NotificationQueue;
-import it.ranierivannozzi.webhook.application.port.out.WebhookConfigurationRepository;
+import it.ranierivannozzi.webhook.application.port.in.OneShotServicePort;
+import it.ranierivannozzi.webhook.application.port.out.ContainerRepositoryPort;
+import it.ranierivannozzi.webhook.application.port.out.DocumentRepositoryPort;
+import it.ranierivannozzi.webhook.application.port.out.NotificationQueuePort;
+import it.ranierivannozzi.webhook.application.port.out.WebhookConfigurationRepositoryPort;
 import it.ranierivannozzi.webhook.domain.model.Container;
 import it.ranierivannozzi.webhook.domain.model.ContainerStatus;
 import it.ranierivannozzi.webhook.domain.model.Document;
@@ -49,28 +49,30 @@ import it.ranierivannozzi.webhook.domain.resolution.Resolution.Resolved;
  * each item, so every log line of a request can be found together.
  */
 @Service
-public class OneShotService implements SendOneShotUseCase {
+public class OneShotService implements OneShotServicePort {
 
 	private final Semaphore permits;
-	private final NotificationQueue queue;
-	private final DocumentRepository documents;
-	private final ContainerRepository containers;
-	private final WebhookConfigurationRepository configurations;
+	private final NotificationQueuePort notificationQueuePort;
+	private final DocumentRepositoryPort documentRepositoryPort;
+	private final ContainerRepositoryPort containerRepositoryPort;
 	private static final Logger log = LoggerFactory.getLogger(OneShotService.class);
+	private final WebhookConfigurationRepositoryPort webhookConfigurationRepositoryPort;
 
 	/**
 	 * @param maxConcurrentItems how many items may be processed at the same time across all requests
 	 */
-	public OneShotService(DocumentRepository documents, ContainerRepository containers,
-			WebhookConfigurationRepository configurations, NotificationQueue queue,
+	public OneShotService(DocumentRepositoryPort documentRepositoryPort,
+			ContainerRepositoryPort containerRepositoryPort,
+			WebhookConfigurationRepositoryPort webhookConfigurationRepositoryPort,
+			NotificationQueuePort notificationQueuePort,
 			@Value("${oneshot.max-concurrent-items}") int maxConcurrentItems) {
 		if (maxConcurrentItems < 1) {
 			throw new IllegalArgumentException("maxConcurrentItems must be at least 1, was " + maxConcurrentItems);
 		}
-		this.documents = documents;
-		this.containers = containers;
-		this.configurations = configurations;
-		this.queue = queue;
+		this.documentRepositoryPort = documentRepositoryPort;
+		this.containerRepositoryPort = containerRepositoryPort;
+		this.webhookConfigurationRepositoryPort = webhookConfigurationRepositoryPort;
+		this.notificationQueuePort = notificationQueuePort;
 		this.permits = new Semaphore(maxConcurrentItems, true);
 	}
 
@@ -129,11 +131,12 @@ public class OneShotService implements SendOneShotUseCase {
 		ContainerStatus requestedStatus = parseStatus(item.containerStatus());
 
 		// Step 1: document and container
-		Document document = call(FailedStep.DOCUMENT_LOOKUP, "document", () -> documents.findByRequestId(requestId))
+		Document document = call(FailedStep.DOCUMENT_LOOKUP, "document",
+				() -> documentRepositoryPort.findByRequestId(requestId))
 				.orElseThrow(() -> new ItemFailure(FailedStep.DOCUMENT_LOOKUP, "document not found"));
 
 		List<Container> documentContainers = call(FailedStep.CONTAINER_LOOKUP, "container",
-				() -> containers.findByDocumentRequestId(requestId));
+				() -> containerRepositoryPort.findByDocumentRequestId(requestId));
 
 		Resolved resolved = switch (resolve(document, documentContainers, requestedStatus)) {
 			case Resolution.Failed failed -> throw new ItemFailure(stepOf(failed), failed.message());
@@ -154,7 +157,7 @@ public class OneShotService implements SendOneShotUseCase {
 				resolved.status(),
 				configuration.url(),
 				configuration.authType());
-		call(FailedStep.CHANNEL_SEND, "notification queue", () -> queue.enqueue(message));
+		call(FailedStep.CHANNEL_SEND, "notification queue", () -> notificationQueuePort.enqueue(message));
 	}
 
 	private @Nullable ContainerStatus parseStatus(@Nullable String containerStatus) {
@@ -171,7 +174,7 @@ public class OneShotService implements SendOneShotUseCase {
 
 	private WebhookConfiguration resolveConfiguration(String customerId) {
 		Optional<WebhookConfiguration> configuration = call(FailedStep.CONFIG_RESOLUTION, "webhook configuration",
-				() -> configurations.findByCustomerId(customerId));
+				() -> webhookConfigurationRepositoryPort.findByCustomerId(customerId));
 		if (configuration.isEmpty()) {
 			throw new ItemFailure(FailedStep.CONFIG_RESOLUTION, "no webhook configuration for customer " + customerId);
 		}

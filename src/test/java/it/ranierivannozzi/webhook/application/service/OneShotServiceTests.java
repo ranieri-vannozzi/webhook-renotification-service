@@ -28,10 +28,10 @@ import org.slf4j.MDC;
 import it.ranierivannozzi.webhook.application.port.in.FailedStep;
 import it.ranierivannozzi.webhook.application.port.in.ItemResult;
 import it.ranierivannozzi.webhook.application.port.in.OneShotItem;
-import it.ranierivannozzi.webhook.application.port.out.ContainerRepository;
-import it.ranierivannozzi.webhook.application.port.out.DocumentRepository;
-import it.ranierivannozzi.webhook.application.port.out.NotificationQueue;
-import it.ranierivannozzi.webhook.application.port.out.WebhookConfigurationRepository;
+import it.ranierivannozzi.webhook.application.port.out.ContainerRepositoryPort;
+import it.ranierivannozzi.webhook.application.port.out.DocumentRepositoryPort;
+import it.ranierivannozzi.webhook.application.port.out.NotificationQueuePort;
+import it.ranierivannozzi.webhook.application.port.out.WebhookConfigurationRepositoryPort;
 import it.ranierivannozzi.webhook.domain.model.Container;
 import it.ranierivannozzi.webhook.domain.model.ContainerSnapshot;
 import it.ranierivannozzi.webhook.domain.model.ContainerStatus;
@@ -54,11 +54,11 @@ class OneShotServiceTests {
 	private final Map<String, List<Container>> containersByDocument = new HashMap<>();
 	private final Map<String, WebhookConfiguration> configurationsByCustomer = new HashMap<>();
 
-	private NotificationQueue queue = queued::add;
-	private ContainerRepository containers = id -> containersByDocument.getOrDefault(id, List.of());
-	private WebhookConfigurationRepository configurations = id -> Optional
+	private NotificationQueuePort notificationQueuePort = queued::add;
+	private ContainerRepositoryPort containerRepositoryPort = id -> containersByDocument.getOrDefault(id, List.of());
+	private WebhookConfigurationRepositoryPort webhookConfigurationRepositoryPort = id -> Optional
 			.ofNullable(configurationsByCustomer.get(id));
-	private DocumentRepository documents = id -> {
+	private DocumentRepositoryPort documentRepositoryPort = id -> {
 		documentLookups.computeIfAbsent(id, key -> new AtomicInteger()).incrementAndGet();
 		return Optional.ofNullable(documentsById.get(id));
 	};
@@ -161,8 +161,8 @@ class OneShotServiceTests {
 
 	@Test
 	void failsTheStepWhoseSourceIsUnavailableWithoutStoppingTheOthers() {
-		DocumentRepository working = documents;
-		documents = id -> {
+		DocumentRepositoryPort working = documentRepositoryPort;
+		documentRepositoryPort = id -> {
 			if (id.equals("D-004")) {
 				throw new IllegalStateException("connection refused");
 			}
@@ -177,8 +177,10 @@ class OneShotServiceTests {
 
 	@Test
 	void failsOnlyTheItemWhoseStateCannotBeResolved() {
-		ContainerRepository working = containers;
-		containers = id -> id.equals("D-004") ? Arrays.asList((Container) null) : working.findByDocumentRequestId(id);
+		ContainerRepositoryPort working = containerRepositoryPort;
+		containerRepositoryPort = id -> id.equals("D-004")
+				? Arrays.asList((Container) null)
+				: working.findByDocumentRequestId(id);
 
 		List<ItemResult> results = service().send(List.of(item("D-004", null), item("D-001", null)));
 
@@ -188,7 +190,7 @@ class OneShotServiceTests {
 
 	@Test
 	void failsTheChannelStepWhenTheQueueRejectsTheMessage() {
-		queue = message -> {
+		notificationQueuePort = message -> {
 			throw new IllegalStateException("queue full");
 		};
 
@@ -215,7 +217,7 @@ class OneShotServiceTests {
 	void processesItemsInParallelWithinTheConcurrencyLimit() {
 		AtomicInteger inFlight = new AtomicInteger();
 		AtomicInteger peak = new AtomicInteger();
-		documents = id -> {
+		documentRepositoryPort = id -> {
 			peak.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
 			try {
 				Thread.sleep(50);
@@ -237,7 +239,7 @@ class OneShotServiceTests {
 	@Test
 	void copiesTheLoggingContextToTheItemThreads() {
 		List<@Nullable String> seen = new CopyOnWriteArrayList<>();
-		queue = message -> seen.add(MDC.get("correlationId"));
+		notificationQueuePort = message -> seen.add(MDC.get("correlationId"));
 
 		MDC.put("correlationId", "req-42");
 		try {
@@ -260,7 +262,8 @@ class OneShotServiceTests {
 	}
 
 	private OneShotService service(int maxConcurrentItems) {
-		return new OneShotService(documents, containers, configurations, queue, maxConcurrentItems);
+		return new OneShotService(documentRepositoryPort, containerRepositoryPort, webhookConfigurationRepositoryPort,
+				notificationQueuePort, maxConcurrentItems);
 	}
 
 	private void add(Document document, Container container) {

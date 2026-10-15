@@ -6,14 +6,14 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
-import it.ranierivannozzi.webhook.application.port.out.DocumentRepository;
+import it.ranierivannozzi.webhook.application.port.out.DocumentRepositoryPort;
 import it.ranierivannozzi.webhook.domain.model.Document;
 
 /**
  * Documents of the dataset, indexed by {@code requestId}. Read-only; every call waits the simulated latency.
  */
 @Repository
-public class InMemoryDocumentRepository implements DocumentRepository {
+public class InMemoryDocumentRepository implements DocumentRepositoryPort {
 
 	private final SimulatedLatency latency;
 	private final Map<String, Document> byRequestIdMap = new HashMap<>();
