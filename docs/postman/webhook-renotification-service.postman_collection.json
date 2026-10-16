@@ -1,0 +1,1589 @@
+{
+  "info": {
+    "name": "Webhook re-notification service",
+    "description": "Casi di prova per POST /v1/webhook/oneshot sul dataset di esempio. Avvia il servizio con ./run.sh, poi lancia la collection (Run collection): ogni richiesta verifica la risposta attesa. La latenza simulata delle sorgenti (5ms-2s) rende alcune richieste lente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Servizio",
+      "item": [
+        {
+          "name": "Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"UP\", () => pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Il servizio è avviato."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Percorso felice",
+      "item": [
+        {
+          "name": "Esempio del contratto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-001\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-004\", \"containerStatus\": \"DELIVERED\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-999\", \"outcome\": \"FAILED\", \"failedStep\": \"DOCUMENT_LOOKUP\", \"error\": \"document not found\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-001\" },\n  { \"requestId\": \"D-004\", \"containerStatus\": \"DELIVERED\" },\n  { \"requestId\": \"D-999\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "I tre item dell'esempio nel contratto HTTP: stato attuale, stato richiesto e documento inesistente."
+          },
+          "response": [
+            {
+              "name": "200 Esempio del contratto",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-001\" },\n  { \"requestId\": \"D-004\", \"containerStatus\": \"DELIVERED\" },\n  { \"requestId\": \"D-999\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "I tre item dell'esempio nel contratto HTTP: stato attuale, stato richiesto e documento inesistente."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-001\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-004\",\n    \"containerStatus\": \"DELIVERED\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-999\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"DOCUMENT_LOOKUP\",\n    \"error\": \"document not found\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Tutti i documenti, stato attuale",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-001\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-002\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-003\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-004\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-005\", \"outcome\": \"FAILED\", \"failedStep\": \"CONFIG_RESOLUTION\", \"error\": \"no webhook configuration for customer CUST-C\"}, {\"requestId\": \"D-006\", \"outcome\": \"FAILED\", \"failedStep\": \"CONFIG_RESOLUTION\", \"error\": \"webhook disabled for customer CUST-D\"}, {\"requestId\": \"D-007\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-008\", \"outcome\": \"QUEUED\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"requestId\": \"D-001\"\n  },\n  {\n    \"requestId\": \"D-002\"\n  },\n  {\n    \"requestId\": \"D-003\"\n  },\n  {\n    \"requestId\": \"D-004\"\n  },\n  {\n    \"requestId\": \"D-005\"\n  },\n  {\n    \"requestId\": \"D-006\"\n  },\n  {\n    \"requestId\": \"D-007\"\n  },\n  {\n    \"requestId\": \"D-008\"\n  }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "Gli 8 documenti del dataset senza containerStatus: si notifica lo stato allineato all'ultima versione. D-005 e D-006 falliscono sulla configurazione webhook (cliente senza config / disabilitato)."
+          },
+          "response": [
+            {
+              "name": "200 Tutti i documenti, stato attuale",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  {\n    \"requestId\": \"D-001\"\n  },\n  {\n    \"requestId\": \"D-002\"\n  },\n  {\n    \"requestId\": \"D-003\"\n  },\n  {\n    \"requestId\": \"D-004\"\n  },\n  {\n    \"requestId\": \"D-005\"\n  },\n  {\n    \"requestId\": \"D-006\"\n  },\n  {\n    \"requestId\": \"D-007\"\n  },\n  {\n    \"requestId\": \"D-008\"\n  }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "Gli 8 documenti del dataset senza containerStatus: si notifica lo stato allineato all'ultima versione. D-005 e D-006 falliscono sulla configurazione webhook (cliente senza config / disabilitato)."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-001\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-002\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-003\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-004\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-005\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"CONFIG_RESOLUTION\",\n    \"error\": \"no webhook configuration for customer CUST-C\"\n  },\n  {\n    \"requestId\": \"D-006\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"CONFIG_RESOLUTION\",\n    \"error\": \"webhook disabled for customer CUST-D\"\n  },\n  {\n    \"requestId\": \"D-007\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-008\",\n    \"outcome\": \"QUEUED\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Stato richiesto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-001\", \"containerStatus\": \"SENT\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-001\", \"containerStatus\": \"DELIVERED\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-008\", \"containerStatus\": \"DELIVERED\", \"outcome\": \"QUEUED\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-001\", \"containerStatus\": \"SENT\" },\n  { \"requestId\": \"D-001\", \"containerStatus\": \"DELIVERED\" },\n  { \"requestId\": \"D-008\", \"containerStatus\": \"DELIVERED\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "containerStatus richiesto: si notifica lo snapshot in quello stato e la versione a cui si riferisce."
+          },
+          "response": [
+            {
+              "name": "200 Stato richiesto",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-001\", \"containerStatus\": \"SENT\" },\n  { \"requestId\": \"D-001\", \"containerStatus\": \"DELIVERED\" },\n  { \"requestId\": \"D-008\", \"containerStatus\": \"DELIVERED\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "containerStatus richiesto: si notifica lo snapshot in quello stato e la versione a cui si riferisce."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-001\",\n    \"containerStatus\": \"SENT\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-001\",\n    \"containerStatus\": \"DELIVERED\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-008\",\n    \"containerStatus\": \"DELIVERED\",\n    \"outcome\": \"QUEUED\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Lista vuota",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "Una lista vuota riceve una lista vuota."
+          },
+          "response": [
+            {
+              "name": "200 Lista vuota",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "Una lista vuota riceve una lista vuota."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Casi rari del dataset",
+      "item": [
+        {
+          "name": "D-002: stato SENT ripetuto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-002\", \"containerStatus\": \"SENT\", \"outcome\": \"QUEUED\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-002\", \"containerStatus\": \"SENT\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "C-002 passa due volte per SENT (versioni 1 e 2): vince lo snapshot più recente."
+          },
+          "response": [
+            {
+              "name": "200 D-002: stato SENT ripetuto",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-002\", \"containerStatus\": \"SENT\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "C-002 passa due volte per SENT (versioni 1 e 2): vince lo snapshot più recente."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-002\",\n    \"containerStatus\": \"SENT\",\n    \"outcome\": \"QUEUED\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "D-003: due container",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-003\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-003\", \"containerStatus\": \"DELIVERED\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-003\", \"containerStatus\": \"REJECTED\", \"outcome\": \"QUEUED\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-003\" },\n  { \"requestId\": \"D-003\", \"containerStatus\": \"DELIVERED\" },\n  { \"requestId\": \"D-003\", \"containerStatus\": \"REJECTED\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "D-003 ha due container (C-003 DELIVERED, C-003B REJECTED): con REJECTED si sceglie l'unico container passato da quello stato."
+          },
+          "response": [
+            {
+              "name": "200 D-003: due container",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-003\" },\n  { \"requestId\": \"D-003\", \"containerStatus\": \"DELIVERED\" },\n  { \"requestId\": \"D-003\", \"containerStatus\": \"REJECTED\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "D-003 ha due container (C-003 DELIVERED, C-003B REJECTED): con REJECTED si sceglie l'unico container passato da quello stato."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-003\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-003\",\n    \"containerStatus\": \"DELIVERED\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-003\",\n    \"containerStatus\": \"REJECTED\",\n    \"outcome\": \"QUEUED\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "D-007: buco nella storia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-007\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-007\", \"containerStatus\": \"DELIVERED\", \"outcome\": \"FAILED\", \"failedStep\": \"DOCUMENT_LOOKUP\", \"error\": \"document version 2 not found in history\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-007\" },\n  { \"requestId\": \"D-007\", \"containerStatus\": \"DELIVERED\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "D-007 ha le versioni 1 e 3 ma non la 2: lo stato attuale funziona, DELIVERED punta alla versione 2 mancante e fallisce."
+          },
+          "response": [
+            {
+              "name": "200 D-007: buco nella storia",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-007\" },\n  { \"requestId\": \"D-007\", \"containerStatus\": \"DELIVERED\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "D-007 ha le versioni 1 e 3 ma non la 2: lo stato attuale funziona, DELIVERED punta alla versione 2 mancante e fallisce."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-007\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-007\",\n    \"containerStatus\": \"DELIVERED\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"DOCUMENT_LOOKUP\",\n    \"error\": \"document version 2 not found in history\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "D-008: snapshot duplicato",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-008\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-008\", \"containerStatus\": \"DELIVERED\", \"outcome\": \"QUEUED\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-008\" },\n  { \"requestId\": \"D-008\", \"containerStatus\": \"DELIVERED\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "C-008 ha due snapshot DELIVERED per la stessa versione 2: vengono tollerati."
+          },
+          "response": [
+            {
+              "name": "200 D-008: snapshot duplicato",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-008\" },\n  { \"requestId\": \"D-008\", \"containerStatus\": \"DELIVERED\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "C-008 ha due snapshot DELIVERED per la stessa versione 2: vengono tollerati."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-008\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-008\",\n    \"containerStatus\": \"DELIVERED\",\n    \"outcome\": \"QUEUED\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Errori per item (200 con FAILED)",
+      "item": [
+        {
+          "name": "Documento inesistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-999\", \"outcome\": \"FAILED\", \"failedStep\": \"DOCUMENT_LOOKUP\", \"error\": \"document not found\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-999\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "DOCUMENT_LOOKUP: document not found."
+          },
+          "response": [
+            {
+              "name": "200 Documento inesistente",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-999\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "DOCUMENT_LOOKUP: document not found."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-999\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"DOCUMENT_LOOKUP\",\n    \"error\": \"document not found\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "requestId mancante, vuoto o elemento null",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": null, \"outcome\": \"FAILED\", \"failedStep\": \"DOCUMENT_LOOKUP\", \"error\": \"requestId is missing\"}, {\"requestId\": \"  \", \"outcome\": \"FAILED\", \"failedStep\": \"DOCUMENT_LOOKUP\", \"error\": \"requestId is missing\"}, {\"requestId\": null, \"outcome\": \"FAILED\", \"failedStep\": \"DOCUMENT_LOOKUP\", \"error\": \"requestId is missing\"}, {\"requestId\": \"D-001\", \"outcome\": \"QUEUED\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {},\n  { \"requestId\": \"  \" },\n  null,\n  { \"requestId\": \"D-001\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "DOCUMENT_LOOKUP: requestId is missing. Un elemento null diventa un item senza requestId."
+          },
+          "response": [
+            {
+              "name": "200 requestId mancante, vuoto o elemento null",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  {},\n  { \"requestId\": \"  \" },\n  null,\n  { \"requestId\": \"D-001\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "DOCUMENT_LOOKUP: requestId is missing. Un elemento null diventa un item senza requestId."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": null,\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"DOCUMENT_LOOKUP\",\n    \"error\": \"requestId is missing\"\n  },\n  {\n    \"requestId\": \"  \",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"DOCUMENT_LOOKUP\",\n    \"error\": \"requestId is missing\"\n  },\n  {\n    \"requestId\": null,\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"DOCUMENT_LOOKUP\",\n    \"error\": \"requestId is missing\"\n  },\n  {\n    \"requestId\": \"D-001\",\n    \"outcome\": \"QUEUED\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "containerStatus sconosciuto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-004\", \"containerStatus\": \"PAID\", \"outcome\": \"FAILED\", \"failedStep\": \"CONTAINER_LOOKUP\", \"error\": \"unknown container status 'PAID'\"}, {\"requestId\": \"D-004\", \"containerStatus\": \"delivered\", \"outcome\": \"FAILED\", \"failedStep\": \"CONTAINER_LOOKUP\", \"error\": \"unknown container status 'delivered'\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-004\", \"containerStatus\": \"PAID\" },\n  { \"requestId\": \"D-004\", \"containerStatus\": \"delivered\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "CONTAINER_LOOKUP: lo stato non esiste o non è maiuscolo."
+          },
+          "response": [
+            {
+              "name": "200 containerStatus sconosciuto",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-004\", \"containerStatus\": \"PAID\" },\n  { \"requestId\": \"D-004\", \"containerStatus\": \"delivered\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "CONTAINER_LOOKUP: lo stato non esiste o non è maiuscolo."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-004\",\n    \"containerStatus\": \"PAID\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"CONTAINER_LOOKUP\",\n    \"error\": \"unknown container status 'PAID'\"\n  },\n  {\n    \"requestId\": \"D-004\",\n    \"containerStatus\": \"delivered\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"CONTAINER_LOOKUP\",\n    \"error\": \"unknown container status 'delivered'\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Nessuno snapshot nello stato richiesto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-004\", \"containerStatus\": \"ACCEPTED\", \"outcome\": \"FAILED\", \"failedStep\": \"CONTAINER_LOOKUP\", \"error\": \"no container snapshot in status ACCEPTED\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-004\", \"containerStatus\": \"ACCEPTED\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "CONTAINER_LOOKUP: il container di D-004 non è mai passato da ACCEPTED."
+          },
+          "response": [
+            {
+              "name": "200 Nessuno snapshot nello stato richiesto",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-004\", \"containerStatus\": \"ACCEPTED\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "CONTAINER_LOOKUP: il container di D-004 non è mai passato da ACCEPTED."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-004\",\n    \"containerStatus\": \"ACCEPTED\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"CONTAINER_LOOKUP\",\n    \"error\": \"no container snapshot in status ACCEPTED\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Configurazione webhook mancante o disabilitata",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-005\", \"outcome\": \"FAILED\", \"failedStep\": \"CONFIG_RESOLUTION\", \"error\": \"no webhook configuration for customer CUST-C\"}, {\"requestId\": \"D-006\", \"outcome\": \"FAILED\", \"failedStep\": \"CONFIG_RESOLUTION\", \"error\": \"webhook disabled for customer CUST-D\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-005\" },\n  { \"requestId\": \"D-006\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "CONFIG_RESOLUTION: CUST-C non ha configurazione, CUST-D ce l'ha disabilitata."
+          },
+          "response": [
+            {
+              "name": "200 Configurazione webhook mancante o disabilitata",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-005\" },\n  { \"requestId\": \"D-006\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "CONFIG_RESOLUTION: CUST-C non ha configurazione, CUST-D ce l'ha disabilitata."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-005\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"CONFIG_RESOLUTION\",\n    \"error\": \"no webhook configuration for customer CUST-C\"\n  },\n  {\n    \"requestId\": \"D-006\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"CONFIG_RESOLUTION\",\n    \"error\": \"webhook disabled for customer CUST-D\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Item duplicati",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-001\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-001\", \"outcome\": \"QUEUED\"}, {\"requestId\": \"D-999\", \"outcome\": \"FAILED\", \"failedStep\": \"DOCUMENT_LOOKUP\", \"error\": \"document not found\"}, {\"requestId\": \"D-999\", \"outcome\": \"FAILED\", \"failedStep\": \"DOCUMENT_LOOKUP\", \"error\": \"document not found\"}]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-001\" },\n  { \"requestId\": \"D-001\" },\n  { \"requestId\": \"D-999\" },\n  { \"requestId\": \"D-999\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "Gli item uguali vengono elaborati una volta sola, ma ognuno riceve la sua risposta, nell'ordine della richiesta."
+          },
+          "response": [
+            {
+              "name": "200 Item duplicati",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-001\" },\n  { \"requestId\": \"D-001\" },\n  { \"requestId\": \"D-999\" },\n  { \"requestId\": \"D-999\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "Gli item uguali vengono elaborati una volta sola, ma ognuno riceve la sua risposta, nell'ordine della richiesta."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-001\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-001\",\n    \"outcome\": \"QUEUED\"\n  },\n  {\n    \"requestId\": \"D-999\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"DOCUMENT_LOOKUP\",\n    \"error\": \"document not found\"\n  },\n  {\n    \"requestId\": \"D-999\",\n    \"outcome\": \"FAILED\",\n    \"failedStep\": \"DOCUMENT_LOOKUP\",\n    \"error\": \"document not found\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Errori della richiesta (4xx)",
+      "item": [
+        {
+          "name": "Body non è un array",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"problem detail\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\"));",
+                  "pm.test(\"detail as expected\", () => pm.expect(pm.response.json().detail).to.eql(\"The body must be a JSON array of items, e.g. [ { \\\"requestId\\\": \\\"D-001\\\" } ]\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"requestId\": \"D-001\" }"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "400 problem detail: il body deve essere un array JSON."
+          },
+          "response": [
+            {
+              "name": "400 Body non è un array",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{ \"requestId\": \"D-001\" }"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "400 problem detail: il body deve essere un array JSON."
+              },
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/problem+json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"The body must be a JSON array of items, e.g. [ { \\\"requestId\\\": \\\"D-001\\\" } ]\",\n  \"instance\": \"/v1/webhook/oneshot\",\n  \"status\": 400,\n  \"title\": \"Bad Request\"\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Body non è JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"problem detail\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\"));",
+                  "pm.test(\"detail as expected\", () => pm.expect(pm.response.json().detail).to.eql(\"The body must be a JSON array of items, e.g. [ { \\\"requestId\\\": \\\"D-001\\\" } ]\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "not json"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "400 problem detail: il body non è JSON valido."
+          },
+          "response": [
+            {
+              "name": "400 Body non è JSON",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "not json"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "400 problem detail: il body non è JSON valido."
+              },
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/problem+json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"The body must be a JSON array of items, e.g. [ { \\\"requestId\\\": \\\"D-001\\\" } ]\",\n  \"instance\": \"/v1/webhook/oneshot\",\n  \"status\": 400,\n  \"title\": \"Bad Request\"\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Content-Type sbagliato",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 415\", () => pm.response.to.have.status(415));",
+                  "pm.test(\"problem detail\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\"));",
+                  "pm.test(\"detail as expected\", () => pm.expect(pm.response.json().detail).to.eql(\"Content-Type 'text/plain' is not supported.\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[ { \"requestId\": \"D-001\" } ]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "415: l'endpoint accetta solo application/json."
+          },
+          "response": [
+            {
+              "name": "415 Content-Type sbagliato",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "text/plain"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[ { \"requestId\": \"D-001\" } ]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "415: l'endpoint accetta solo application/json."
+              },
+              "code": 415,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/problem+json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Content-Type 'text/plain' is not supported.\",\n  \"instance\": \"/v1/webhook/oneshot\",\n  \"status\": 415,\n  \"title\": \"Unsupported Media Type\"\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Correlation id",
+      "item": [
+        {
+          "name": "Correlation id fornito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-001\", \"outcome\": \"QUEUED\"}]));",
+                  "pm.test(\"correlation id echoed\", () => pm.expect(pm.response.headers.get(\"X-Correlation-Id\")).to.eql(\"postman-demo-42\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-demo-42"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-001\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "L'header X-Correlation-Id ricevuto torna nella risposta e compare in ogni riga di log della richiesta."
+          },
+          "response": [
+            {
+              "name": "200 Correlation id fornito",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "postman-demo-42"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-001\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "L'header X-Correlation-Id ricevuto torna nella risposta e compare in ogni riga di log della richiesta."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-001\",\n    \"outcome\": \"QUEUED\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Correlation id generato",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body as expected\", () => pm.expect(pm.response.json()).to.eql([{\"requestId\": \"D-001\", \"outcome\": \"QUEUED\"}]));",
+                  "pm.test(\"correlation id generated\", () => pm.expect(pm.response.headers.get(\"X-Correlation-Id\")).to.be.a(\"string\").and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"requestId\": \"D-001\" }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook/oneshot",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook",
+                "oneshot"
+              ]
+            },
+            "description": "Senza header, il servizio ne genera uno nuovo e lo restituisce."
+          },
+          "response": [
+            {
+              "name": "200 Correlation id generato",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "[\n  { \"requestId\": \"D-001\" }\n]"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/v1/webhook/oneshot",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "webhook",
+                    "oneshot"
+                  ]
+                },
+                "description": "Senza header, il servizio ne genera uno nuovo e lo restituisce."
+              },
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"requestId\": \"D-001\",\n    \"outcome\": \"QUEUED\"\n  }\n]",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ]
+}
