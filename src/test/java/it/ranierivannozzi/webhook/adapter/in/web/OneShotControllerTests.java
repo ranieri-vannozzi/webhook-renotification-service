@@ -77,7 +77,10 @@ class OneShotControllerTests {
 
 	@Test
 	void rejectsABodyThatIsNotAJsonArray() {
-		assertThat(post("{ \"requestId\": \"D-001\" }")).hasStatus(HttpStatus.BAD_REQUEST);
+		assertThat(post("{ \"requestId\": \"D-001\" }"))
+				.hasStatus(HttpStatus.BAD_REQUEST)
+				.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.bodyJson().extractingPath("$.detail").isEqualTo(WebExceptionHandler.NOT_A_JSON_ARRAY);
 		assertThat(post("not json")).hasStatus(HttpStatus.BAD_REQUEST);
 		assertThat(post("")).hasStatus(HttpStatus.BAD_REQUEST);
 		verify(servicePort, never()).send(anyList());
