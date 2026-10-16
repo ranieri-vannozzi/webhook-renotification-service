@@ -18,7 +18,7 @@ import it.ranierivannozzi.webhook.domain.model.WebhookAuthType;
 
 import tools.jackson.databind.json.JsonMapper;
 
-class DatasetLoaderTests {
+class DatasetLoaderUnitTests {
 
     private final DatasetLoader loader = new DatasetLoader(JsonMapper.builder().build());
 

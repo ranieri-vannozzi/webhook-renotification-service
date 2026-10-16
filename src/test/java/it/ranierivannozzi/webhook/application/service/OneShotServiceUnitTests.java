@@ -44,7 +44,7 @@ import it.ranierivannozzi.webhook.domain.model.WebhookConfiguration;
 /**
  * The outbound ports are replaced by lambdas over maps holding a subset of dataset.json.
  */
-class OneShotServiceTests {
+class OneShotServiceUnitTests {
 
     private static final URI CUST_A_URL = URI.create("https://hooks.cliente-a.example/einvoice");
 

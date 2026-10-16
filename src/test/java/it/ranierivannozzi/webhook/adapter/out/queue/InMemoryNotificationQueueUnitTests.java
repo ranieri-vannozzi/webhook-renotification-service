@@ -16,7 +16,7 @@ import it.ranierivannozzi.webhook.domain.model.DocumentVersion;
 import it.ranierivannozzi.webhook.domain.model.NotificationMessage;
 import it.ranierivannozzi.webhook.domain.model.WebhookAuthType;
 
-class InMemoryNotificationQueueTests {
+class InMemoryNotificationQueueUnitTests {
 
     private static final Duration BACKOFF = Duration.ofSeconds(30);
 

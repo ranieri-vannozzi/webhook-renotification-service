@@ -25,7 +25,7 @@ import it.ranierivannozzi.webhook.application.port.in.OneShotServicePort;
  * The HTTP contract only: the use case is mocked.
  */
 @WebMvcTest(OneShotController.class)
-class OneShotControllerTests {
+class OneShotControllerSliceTests {
 
     @Autowired
     private MockMvcTester mvc;

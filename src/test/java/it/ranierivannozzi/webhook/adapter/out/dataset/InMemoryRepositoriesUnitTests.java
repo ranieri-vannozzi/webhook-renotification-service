@@ -9,7 +9,7 @@ import it.ranierivannozzi.webhook.domain.model.Container;
 
 import tools.jackson.databind.json.JsonMapper;
 
-class InMemoryRepositoriesTests {
+class InMemoryRepositoriesUnitTests {
 
     private final Dataset dataset = new DatasetLoader(JsonMapper.builder().build())
             .load(new ClassPathResource("dataset/dataset.json"));

@@ -19,7 +19,7 @@ import it.ranierivannozzi.webhook.domain.model.ContainerStatus;
  */
 @SpringBootTest(properties = {"oneshot.source-latency-min=0ms", "oneshot.source-latency-max=0ms"})
 @AutoConfigureMockMvc
-class OneShotEndToEndTests {
+class OneShotE2ETests {
 
     @Autowired
     private MockMvcTester mvc;

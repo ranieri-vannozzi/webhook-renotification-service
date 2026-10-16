@@ -26,7 +26,7 @@ import it.ranierivannozzi.webhook.domain.resolution.Resolution.Resolved;
 /**
  * Cases mirror the entries of dataset.json with the same identifiers.
  */
-class DocumentStateResolverTests {
+class DocumentStateResolverUnitTests {
 
     @Nested
     class WithoutRequestedStatus {
