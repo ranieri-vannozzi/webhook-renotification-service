@@ -1,4 +1,4 @@
-# Eclipse formatter settings applied by Spotless (./mvnw spotless:apply, checked by ./verify.sh).
+# Eclipse formatter settings applied by Spotless (./format.sh, checked by ./verify.sh).
 # Anything not listed here keeps the Eclipse built-in default.
 
 # Lines up to 160 characters, indented with 4 spaces
