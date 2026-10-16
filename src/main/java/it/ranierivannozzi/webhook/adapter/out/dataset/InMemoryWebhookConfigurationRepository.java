@@ -15,22 +15,22 @@ import it.ranierivannozzi.webhook.domain.model.WebhookConfiguration;
 @Repository
 public class InMemoryWebhookConfigurationRepository implements WebhookConfigurationRepositoryPort {
 
-	private final SimulatedLatency latency;
-	private final Map<String, WebhookConfiguration> byCustomerMap = new HashMap<>();
+    private final SimulatedLatency latency;
+    private final Map<String, WebhookConfiguration> byCustomerMap = new HashMap<>();
 
-	public InMemoryWebhookConfigurationRepository(Dataset dataset, SimulatedLatency latency) {
-		this.latency = latency;
-		for (WebhookConfiguration configuration : dataset.webhookConfigurations()) {
-			if (byCustomerMap.putIfAbsent(configuration.customerId(), configuration) != null) {
-				throw new InvalidDatasetException("Duplicate webhook configuration for " + configuration.customerId());
-			}
-		}
-	}
+    public InMemoryWebhookConfigurationRepository(Dataset dataset, SimulatedLatency latency) {
+        this.latency = latency;
+        for (WebhookConfiguration configuration : dataset.webhookConfigurations()) {
+            if (byCustomerMap.putIfAbsent(configuration.customerId(), configuration) != null) {
+                throw new InvalidDatasetException("Duplicate webhook configuration for " + configuration.customerId());
+            }
+        }
+    }
 
-	@Override
-	public Optional<WebhookConfiguration> findByCustomerId(String customerId) {
-		latency.pause();
-		return Optional.ofNullable(byCustomerMap.get(customerId));
-	}
+    @Override
+    public Optional<WebhookConfiguration> findByCustomerId(String customerId) {
+        latency.pause();
+        return Optional.ofNullable(byCustomerMap.get(customerId));
+    }
 
 }

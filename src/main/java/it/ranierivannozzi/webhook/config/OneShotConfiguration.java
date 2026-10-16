@@ -19,14 +19,14 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration(proxyBeanMethods = false)
 class OneShotConfiguration {
 
-	@Bean
-	Dataset dataset(@Value("${oneshot.dataset}") Resource file, JsonMapper jsonMapper) {
-		return new DatasetLoader(jsonMapper).load(file);
-	}
+    @Bean
+    Dataset dataset(@Value("${oneshot.dataset}") Resource file, JsonMapper jsonMapper) {
+        return new DatasetLoader(jsonMapper).load(file);
+    }
 
-	@Bean
-	InstantSource instantSource() {
-		return InstantSource.system();
-	}
+    @Bean
+    InstantSource instantSource() {
+        return InstantSource.system();
+    }
 
 }

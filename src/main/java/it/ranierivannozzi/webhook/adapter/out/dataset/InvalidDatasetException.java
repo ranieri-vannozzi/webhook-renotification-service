@@ -6,12 +6,12 @@ package it.ranierivannozzi.webhook.adapter.out.dataset;
  */
 public class InvalidDatasetException extends RuntimeException {
 
-	public InvalidDatasetException(String message) {
-		super(message);
-	}
+    public InvalidDatasetException(String message) {
+        super(message);
+    }
 
-	public InvalidDatasetException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public InvalidDatasetException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
 }

@@ -46,256 +46,254 @@ import it.ranierivannozzi.webhook.domain.model.WebhookConfiguration;
  */
 class OneShotServiceTests {
 
-	private static final URI CUST_A_URL = URI.create("https://hooks.cliente-a.example/einvoice");
+    private static final URI CUST_A_URL = URI.create("https://hooks.cliente-a.example/einvoice");
 
-	private final Map<String, Document> documentsById = new HashMap<>();
-	private final List<NotificationMessage> queued = new CopyOnWriteArrayList<>();
-	private final Map<String, AtomicInteger> documentLookups = new ConcurrentHashMap<>();
-	private final Map<String, List<Container>> containersByDocument = new HashMap<>();
-	private final Map<String, WebhookConfiguration> configurationsByCustomer = new HashMap<>();
+    private final Map<String, Document> documentsById = new HashMap<>();
+    private final List<NotificationMessage> queued = new CopyOnWriteArrayList<>();
+    private final Map<String, AtomicInteger> documentLookups = new ConcurrentHashMap<>();
+    private final Map<String, List<Container>> containersByDocument = new HashMap<>();
+    private final Map<String, WebhookConfiguration> configurationsByCustomer = new HashMap<>();
 
-	private NotificationQueuePort notificationQueuePort = queued::add;
-	private ContainerRepositoryPort containerRepositoryPort = id -> containersByDocument.getOrDefault(id, List.of());
-	private WebhookConfigurationRepositoryPort webhookConfigurationRepositoryPort = id -> Optional
-			.ofNullable(configurationsByCustomer.get(id));
-	private DocumentRepositoryPort documentRepositoryPort = id -> {
-		documentLookups.computeIfAbsent(id, key -> new AtomicInteger()).incrementAndGet();
-		return Optional.ofNullable(documentsById.get(id));
-	};
+    private NotificationQueuePort notificationQueuePort = queued::add;
+    private ContainerRepositoryPort containerRepositoryPort = id -> containersByDocument.getOrDefault(id, List.of());
+    private WebhookConfigurationRepositoryPort webhookConfigurationRepositoryPort = id -> Optional
+            .ofNullable(configurationsByCustomer.get(id));
+    private DocumentRepositoryPort documentRepositoryPort = id -> {
+        documentLookups.computeIfAbsent(id, key -> new AtomicInteger()).incrementAndGet();
+        return Optional.ofNullable(documentsById.get(id));
+    };
 
-	@BeforeEach
-	void dataset() {
-		add(document("D-001", "CUST-A", 1, 2, 3), container("C-001", "D-001",
-				snapshot(SENT, 1, "2026-09-01T09:00:10Z"),
-				snapshot(DELIVERED, 2, "2026-09-01T09:05:10Z"),
-				snapshot(ACCEPTED, 3, "2026-09-02T14:30:10Z")));
-		add(document("D-004", "CUST-B", 1, 2), container("C-004", "D-004",
-				snapshot(SENT, 1, "2026-09-07T07:30:10Z"),
-				snapshot(DELIVERED, 2, "2026-09-07T07:31:10Z")));
-		add(document("D-005", "CUST-C", 1), container("C-005", "D-005",
-				snapshot(SENT, 1, "2026-09-08T12:00:10Z")));
-		add(document("D-006", "CUST-D", 1, 2), container("C-006", "D-006",
-				snapshot(SENT, 1, "2026-09-09T15:00:10Z"),
-				snapshot(ACCEPTED, 2, "2026-09-09T15:20:10Z")));
-		add(document("D-007", "CUST-A", 1, 3), container("C-007", "D-007",
-				snapshot(SENT, 1, "2026-09-10T09:00:10Z"),
-				snapshot(DELIVERED, 2, "2026-09-10T18:00:00Z"),
-				snapshot(ACCEPTED, 3, "2026-09-11T09:00:10Z")));
-		documentsById.put("D-NC", document("D-NC", "CUST-A", 1));
+    @BeforeEach
+    void dataset() {
+        add(document("D-001", "CUST-A", 1, 2, 3), container("C-001", "D-001",
+                snapshot(SENT, 1, "2026-09-01T09:00:10Z"),
+                snapshot(DELIVERED, 2, "2026-09-01T09:05:10Z"),
+                snapshot(ACCEPTED, 3, "2026-09-02T14:30:10Z")));
+        add(document("D-004", "CUST-B", 1, 2), container("C-004", "D-004",
+                snapshot(SENT, 1, "2026-09-07T07:30:10Z"),
+                snapshot(DELIVERED, 2, "2026-09-07T07:31:10Z")));
+        add(document("D-005", "CUST-C", 1), container("C-005", "D-005",
+                snapshot(SENT, 1, "2026-09-08T12:00:10Z")));
+        add(document("D-006", "CUST-D", 1, 2), container("C-006", "D-006",
+                snapshot(SENT, 1, "2026-09-09T15:00:10Z"),
+                snapshot(ACCEPTED, 2, "2026-09-09T15:20:10Z")));
+        add(document("D-007", "CUST-A", 1, 3), container("C-007", "D-007",
+                snapshot(SENT, 1, "2026-09-10T09:00:10Z"),
+                snapshot(DELIVERED, 2, "2026-09-10T18:00:00Z"),
+                snapshot(ACCEPTED, 3, "2026-09-11T09:00:10Z")));
+        documentsById.put("D-NC", document("D-NC", "CUST-A", 1));
 
-		configurationsByCustomer.put("CUST-A", new WebhookConfiguration("CUST-A", true, CUST_A_URL,
-				WebhookAuthType.BASIC));
-		configurationsByCustomer.put("CUST-B", new WebhookConfiguration("CUST-B", true,
-				URI.create("https://api.cliente-b.example/v2/notify"), WebhookAuthType.OAUTH2));
-		configurationsByCustomer.put("CUST-D", new WebhookConfiguration("CUST-D", false,
-				URI.create("https://cliente-d.example/hook"), WebhookAuthType.HEADER));
-	}
+        configurationsByCustomer.put("CUST-A", new WebhookConfiguration("CUST-A", true, CUST_A_URL,
+                WebhookAuthType.BASIC));
+        configurationsByCustomer.put("CUST-B", new WebhookConfiguration("CUST-B", true,
+                URI.create("https://api.cliente-b.example/v2/notify"), WebhookAuthType.OAUTH2));
+        configurationsByCustomer.put("CUST-D", new WebhookConfiguration("CUST-D", false,
+                URI.create("https://cliente-d.example/hook"), WebhookAuthType.HEADER));
+    }
 
-	@Test
-	void queuesTheResolvedStateWithTheCustomerWebhook() {
-		List<ItemResult> results = service().send(List.of(item("D-001", null)));
+    @Test
+    void queuesTheResolvedStateWithTheCustomerWebhook() {
+        List<ItemResult> results = service().send(List.of(item("D-001", null)));
 
-		assertThat(results).singleElement().isInstanceOf(ItemResult.Queued.class);
-		assertThat(queued).singleElement().satisfies(message -> {
-			assertThat(message.requestId()).isEqualTo("D-001");
-			assertThat(message.customerId()).isEqualTo("CUST-A");
-			assertThat(message.containerId()).isEqualTo("C-001");
-			assertThat(message.document().version()).isEqualTo(3);
-			assertThat(message.containerStatus()).isEqualTo(ACCEPTED);
-			assertThat(message.webhookUrl()).isEqualTo(CUST_A_URL);
-			assertThat(message.authType()).isEqualTo(WebhookAuthType.BASIC);
-		});
-	}
+        assertThat(results).singleElement().isInstanceOf(ItemResult.Queued.class);
+        assertThat(queued).singleElement().satisfies(message -> {
+            assertThat(message.requestId()).isEqualTo("D-001");
+            assertThat(message.customerId()).isEqualTo("CUST-A");
+            assertThat(message.containerId()).isEqualTo("C-001");
+            assertThat(message.document().version()).isEqualTo(3);
+            assertThat(message.containerStatus()).isEqualTo(ACCEPTED);
+            assertThat(message.webhookUrl()).isEqualTo(CUST_A_URL);
+            assertThat(message.authType()).isEqualTo(WebhookAuthType.BASIC);
+        });
+    }
 
-	@Test
-	void returnsOneResultPerItemInRequestOrder() {
-		List<OneShotItem> items = List.of(item("D-001", null), item("D-004", "DELIVERED"), item("D-999", null));
+    @Test
+    void returnsOneResultPerItemInRequestOrder() {
+        List<OneShotItem> items = List.of(item("D-001", null), item("D-004", "DELIVERED"), item("D-999", null));
 
-		List<ItemResult> results = service().send(items);
+        List<ItemResult> results = service().send(items);
 
-		assertThat(results).extracting(ItemResult::originalItem).containsExactlyElementsOf(items);
-		assertThat(results.get(0)).isInstanceOf(ItemResult.Queued.class);
-		assertThat(results.get(1)).isInstanceOf(ItemResult.Queued.class);
-		assertFailed(results.get(2), FailedStep.DOCUMENT_LOOKUP, "document not found");
-	}
+        assertThat(results).extracting(ItemResult::originalItem).containsExactlyElementsOf(items);
+        assertThat(results.get(0)).isInstanceOf(ItemResult.Queued.class);
+        assertThat(results.get(1)).isInstanceOf(ItemResult.Queued.class);
+        assertFailed(results.get(2), FailedStep.DOCUMENT_LOOKUP, "document not found");
+    }
 
-	@Test
-	void returnsNoResultForAnEmptyRequest() {
-		assertThat(service().send(List.of())).isEmpty();
-	}
+    @Test
+    void returnsNoResultForAnEmptyRequest() {
+        assertThat(service().send(List.of())).isEmpty();
+    }
 
-	@Test
-	void failsOnlyTheItemsWithoutRequestId() {
-		List<ItemResult> results = service().send(List.of(item(null, null), item(" ", null), item("D-001", null)));
+    @Test
+    void failsOnlyTheItemsWithoutRequestId() {
+        List<ItemResult> results = service().send(List.of(item(null, null), item(" ", null), item("D-001", null)));
 
-		assertFailed(results.get(0), FailedStep.DOCUMENT_LOOKUP, "requestId is missing");
-		assertFailed(results.get(1), FailedStep.DOCUMENT_LOOKUP, "requestId is missing");
-		assertThat(results.get(2)).isInstanceOf(ItemResult.Queued.class);
-	}
+        assertFailed(results.get(0), FailedStep.DOCUMENT_LOOKUP, "requestId is missing");
+        assertFailed(results.get(1), FailedStep.DOCUMENT_LOOKUP, "requestId is missing");
+        assertThat(results.get(2)).isInstanceOf(ItemResult.Queued.class);
+    }
 
-	@Test
-	void failsOnAnUnknownContainerStatus() {
-		List<ItemResult> results = service().send(List.of(item("D-004", "PAID"), item("D-004", "delivered")));
+    @Test
+    void failsOnAnUnknownContainerStatus() {
+        List<ItemResult> results = service().send(List.of(item("D-004", "PAID"), item("D-004", "delivered")));
 
-		assertFailed(results.get(0), FailedStep.CONTAINER_LOOKUP, "unknown container status 'PAID'");
-		assertFailed(results.get(1), FailedStep.CONTAINER_LOOKUP, "unknown container status 'delivered'");
-		assertThat(queued).isEmpty();
-	}
+        assertFailed(results.get(0), FailedStep.CONTAINER_LOOKUP, "unknown container status 'PAID'");
+        assertFailed(results.get(1), FailedStep.CONTAINER_LOOKUP, "unknown container status 'delivered'");
+        assertThat(queued).isEmpty();
+    }
 
-	@Test
-	void mapsResolutionFailuresToTheLookupSteps() {
-		List<ItemResult> results = service().send(List.of(item("D-007", "DELIVERED"), item("D-NC", null)));
+    @Test
+    void mapsResolutionFailuresToTheLookupSteps() {
+        List<ItemResult> results = service().send(List.of(item("D-007", "DELIVERED"), item("D-NC", null)));
 
-		assertFailed(results.get(0), FailedStep.DOCUMENT_LOOKUP, "document version 2 not found in history");
-		assertFailed(results.get(1), FailedStep.CONTAINER_LOOKUP, "no container associated with the document");
-	}
+        assertFailed(results.get(0), FailedStep.DOCUMENT_LOOKUP, "document version 2 not found in history");
+        assertFailed(results.get(1), FailedStep.CONTAINER_LOOKUP, "no container associated with the document");
+    }
 
-	@Test
-	void failsWhenTheCustomerHasNoUsableWebhook() {
-		List<ItemResult> results = service().send(List.of(item("D-005", null), item("D-006", null)));
+    @Test
+    void failsWhenTheCustomerHasNoUsableWebhook() {
+        List<ItemResult> results = service().send(List.of(item("D-005", null), item("D-006", null)));
 
-		assertFailed(results.get(0), FailedStep.CONFIG_RESOLUTION, "no webhook configuration for customer CUST-C");
-		assertFailed(results.get(1), FailedStep.CONFIG_RESOLUTION, "webhook disabled for customer CUST-D");
-		assertThat(queued).isEmpty();
-	}
+        assertFailed(results.get(0), FailedStep.CONFIG_RESOLUTION, "no webhook configuration for customer CUST-C");
+        assertFailed(results.get(1), FailedStep.CONFIG_RESOLUTION, "webhook disabled for customer CUST-D");
+        assertThat(queued).isEmpty();
+    }
 
-	@Test
-	void failsTheStepWhoseSourceIsUnavailableWithoutStoppingTheOthers() {
-		DocumentRepositoryPort working = documentRepositoryPort;
-		documentRepositoryPort = id -> {
-			if (id.equals("D-004")) {
-				throw new IllegalStateException("connection refused");
-			}
-			return working.findByRequestId(id);
-		};
+    @Test
+    void failsTheStepWhoseSourceIsUnavailableWithoutStoppingTheOthers() {
+        DocumentRepositoryPort working = documentRepositoryPort;
+        documentRepositoryPort = id -> {
+            if (id.equals("D-004")) {
+                throw new IllegalStateException("connection refused");
+            }
+            return working.findByRequestId(id);
+        };
 
-		List<ItemResult> results = service().send(List.of(item("D-004", null), item("D-001", null)));
+        List<ItemResult> results = service().send(List.of(item("D-004", null), item("D-001", null)));
 
-		assertFailed(results.get(0), FailedStep.DOCUMENT_LOOKUP, "document unavailable");
-		assertThat(results.get(1)).isInstanceOf(ItemResult.Queued.class);
-	}
+        assertFailed(results.get(0), FailedStep.DOCUMENT_LOOKUP, "document unavailable");
+        assertThat(results.get(1)).isInstanceOf(ItemResult.Queued.class);
+    }
 
-	@Test
-	void failsOnlyTheItemWhoseStateCannotBeResolved() {
-		ContainerRepositoryPort working = containerRepositoryPort;
-		containerRepositoryPort = id -> id.equals("D-004")
-				? Arrays.asList((Container) null)
-				: working.findByDocumentRequestId(id);
+    @Test
+    void failsOnlyTheItemWhoseStateCannotBeResolved() {
+        ContainerRepositoryPort working = containerRepositoryPort;
+        containerRepositoryPort = id -> id.equals("D-004")
+                ? Arrays.asList((Container) null)
+                : working.findByDocumentRequestId(id);
 
-		List<ItemResult> results = service().send(List.of(item("D-004", null), item("D-001", null)));
+        List<ItemResult> results = service().send(List.of(item("D-004", null), item("D-001", null)));
 
-		assertFailed(results.get(0), FailedStep.CONTAINER_LOOKUP, "could not resolve the state to notify");
-		assertThat(results.get(1)).isInstanceOf(ItemResult.Queued.class);
-	}
+        assertFailed(results.get(0), FailedStep.CONTAINER_LOOKUP, "could not resolve the state to notify");
+        assertThat(results.get(1)).isInstanceOf(ItemResult.Queued.class);
+    }
 
-	@Test
-	void failsTheChannelStepWhenTheQueueRejectsTheMessage() {
-		notificationQueuePort = message -> {
-			throw new IllegalStateException("queue full");
-		};
+    @Test
+    void failsTheChannelStepWhenTheQueueRejectsTheMessage() {
+        notificationQueuePort = message -> {
+            throw new IllegalStateException("queue full");
+        };
 
-		List<ItemResult> results = service().send(List.of(item("D-001", null)));
+        List<ItemResult> results = service().send(List.of(item("D-001", null)));
 
-		assertFailed(results.get(0), FailedStep.CHANNEL_SEND, "notification queue unavailable");
-	}
+        assertFailed(results.get(0), FailedStep.CHANNEL_SEND, "notification queue unavailable");
+    }
 
-	@Test
-	void processesDuplicateItemsOnceAndAnswersEachOfThem() {
-		List<OneShotItem> items = List.of(item("D-001", null), item("D-001", null), item("D-999", null),
-				item("D-999", null), item("D-001", "ACCEPTED"));
+    @Test
+    void processesDuplicateItemsOnceAndAnswersEachOfThem() {
+        List<OneShotItem> items = List.of(item("D-001", null), item("D-001", null), item("D-999", null),
+                item("D-999", null), item("D-001", "ACCEPTED"));
 
-		List<ItemResult> results = service().send(items);
+        List<ItemResult> results = service().send(items);
 
-		assertThat(results).extracting(ItemResult::originalItem).containsExactlyElementsOf(items);
-		assertThat(results).extracting(result -> result.getClass().getSimpleName())
-				.containsExactly("Queued", "Queued", "Failed", "Failed", "Queued");
-		assertThat(documentLookups.get("D-999")).hasValue(1);
-		assertThat(queued).hasSize(2);
-	}
+        assertThat(results).extracting(ItemResult::originalItem).containsExactlyElementsOf(items);
+        assertThat(results).extracting(result -> result.getClass().getSimpleName())
+                .containsExactly("Queued", "Queued", "Failed", "Failed", "Queued");
+        assertThat(documentLookups.get("D-999")).hasValue(1);
+        assertThat(queued).hasSize(2);
+    }
 
-	@Test
-	void processesItemsInParallelWithinTheConcurrencyLimit() {
-		AtomicInteger inFlight = new AtomicInteger();
-		AtomicInteger peak = new AtomicInteger();
-		documentRepositoryPort = id -> {
-			peak.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
-			try {
-				Thread.sleep(50);
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-			inFlight.decrementAndGet();
-			return Optional.empty();
-		};
-		List<OneShotItem> items = IntStream.rangeClosed(1, 20).mapToObj(i -> item("D-P" + i, null)).toList();
+    @Test
+    void processesItemsInParallelWithinTheConcurrencyLimit() {
+        AtomicInteger inFlight = new AtomicInteger();
+        AtomicInteger peak = new AtomicInteger();
+        documentRepositoryPort = id -> {
+            peak.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            inFlight.decrementAndGet();
+            return Optional.empty();
+        };
+        List<OneShotItem> items = IntStream.rangeClosed(1, 20).mapToObj(i -> item("D-P" + i, null)).toList();
 
-		List<ItemResult> results = service(4).send(items);
+        List<ItemResult> results = service(4).send(items);
 
-		assertThat(results).hasSize(20);
-		assertThat(peak.get()).isBetween(2, 4);
-	}
+        assertThat(results).hasSize(20);
+        assertThat(peak.get()).isBetween(2, 4);
+    }
 
-	@Test
-	void copiesTheLoggingContextToTheItemThreads() {
-		List<@Nullable String> seen = new CopyOnWriteArrayList<>();
-		notificationQueuePort = message -> seen.add(MDC.get("correlationId"));
+    @Test
+    void copiesTheLoggingContextToTheItemThreads() {
+        List<@Nullable String> seen = new CopyOnWriteArrayList<>();
+        notificationQueuePort = message -> seen.add(MDC.get("correlationId"));
 
-		MDC.put("correlationId", "req-42");
-		try {
-			service().send(List.of(item("D-001", null), item("D-004", null)));
-		}
-		finally {
-			MDC.remove("correlationId");
-		}
+        MDC.put("correlationId", "req-42");
+        try {
+            service().send(List.of(item("D-001", null), item("D-004", null)));
+        } finally {
+            MDC.remove("correlationId");
+        }
 
-		assertThat(seen).containsExactly("req-42", "req-42");
-	}
+        assertThat(seen).containsExactly("req-42", "req-42");
+    }
 
-	@Test
-	void rejectsANonPositiveConcurrencyLimit() {
-		assertThatIllegalArgumentException().isThrownBy(() -> service(0));
-	}
+    @Test
+    void rejectsANonPositiveConcurrencyLimit() {
+        assertThatIllegalArgumentException().isThrownBy(() -> service(0));
+    }
 
-	private OneShotService service() {
-		return service(8);
-	}
+    private OneShotService service() {
+        return service(8);
+    }
 
-	private OneShotService service(int maxConcurrentItems) {
-		return new OneShotService(documentRepositoryPort, containerRepositoryPort, webhookConfigurationRepositoryPort,
-				notificationQueuePort, maxConcurrentItems);
-	}
+    private OneShotService service(int maxConcurrentItems) {
+        return new OneShotService(documentRepositoryPort, containerRepositoryPort, webhookConfigurationRepositoryPort,
+                notificationQueuePort, maxConcurrentItems);
+    }
 
-	private void add(Document document, Container container) {
-		documentsById.put(document.requestId(), document);
-		containersByDocument.put(document.requestId(), List.of(container));
-	}
+    private void add(Document document, Container container) {
+        documentsById.put(document.requestId(), document);
+        containersByDocument.put(document.requestId(), List.of(container));
+    }
 
-	private static void assertFailed(ItemResult result, FailedStep step, String error) {
-		assertThat(result).isInstanceOfSatisfying(ItemResult.Failed.class, failed -> {
-			assertThat(failed.step()).isEqualTo(step);
-			assertThat(failed.error()).isEqualTo(error);
-		});
-	}
+    private static void assertFailed(ItemResult result, FailedStep step, String error) {
+        assertThat(result).isInstanceOfSatisfying(ItemResult.Failed.class, failed -> {
+            assertThat(failed.step()).isEqualTo(step);
+            assertThat(failed.error()).isEqualTo(error);
+        });
+    }
 
-	private static OneShotItem item(@Nullable String requestId, @Nullable String containerStatus) {
-		return new OneShotItem(requestId, containerStatus);
-	}
+    private static OneShotItem item(@Nullable String requestId, @Nullable String containerStatus) {
+        return new OneShotItem(requestId, containerStatus);
+    }
 
-	private static Document document(String requestId, String customerId, int... versions) {
-		List<DocumentVersion> history = Arrays.stream(versions)
-				.mapToObj(v -> new DocumentVersion(v, Instant.EPOCH, BigDecimal.TEN, Currency.getInstance("EUR")))
-				.toList();
-		return new Document(requestId, customerId, Arrays.stream(versions).max().orElse(0), history);
-	}
+    private static Document document(String requestId, String customerId, int... versions) {
+        List<DocumentVersion> history = Arrays.stream(versions)
+                .mapToObj(v -> new DocumentVersion(v, Instant.EPOCH, BigDecimal.TEN, Currency.getInstance("EUR")))
+                .toList();
+        return new Document(requestId, customerId, Arrays.stream(versions).max().orElse(0), history);
+    }
 
-	private static Container container(String containerId, String requestId, ContainerSnapshot... history) {
-		ContainerSnapshot last = history[history.length - 1];
-		return new Container(containerId, requestId, last.status(), last.documentVersion(), List.of(history));
-	}
+    private static Container container(String containerId, String requestId, ContainerSnapshot... history) {
+        ContainerSnapshot last = history[history.length - 1];
+        return new Container(containerId, requestId, last.status(), last.documentVersion(), List.of(history));
+    }
 
-	private static ContainerSnapshot snapshot(ContainerStatus status, int documentVersion, String changedAt) {
-		return new ContainerSnapshot(status, documentVersion, Instant.parse(changedAt));
-	}
+    private static ContainerSnapshot snapshot(ContainerStatus status, int documentVersion, String changedAt) {
+        return new ContainerSnapshot(status, documentVersion, Instant.parse(changedAt));
+    }
 
 }

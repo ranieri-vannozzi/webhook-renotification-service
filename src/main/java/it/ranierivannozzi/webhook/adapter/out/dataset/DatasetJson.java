@@ -15,31 +15,31 @@ import it.ranierivannozzi.webhook.domain.model.WebhookAuthType;
  * file format.
  */
 record DatasetJson(
-		List<DocumentJson> documents,
-		List<ContainerJson> containers,
-		List<WebhookConfigJson> webhookConfigs) {
+        List<DocumentJson> documents,
+        List<ContainerJson> containers,
+        List<WebhookConfigJson> webhookConfigs) {
 
-	record DocumentJson(String requestId, String customerId, int currentVersion, List<VersionJson> versions) {
-	}
+    record DocumentJson(String requestId, String customerId, int currentVersion, List<VersionJson> versions) {
+    }
 
-	record VersionJson(int version, Instant updatedAt, BigDecimal amount, Currency currency) {
-	}
+    record VersionJson(int version, Instant updatedAt, BigDecimal amount, Currency currency) {
+    }
 
-	record ContainerJson(
-			String containerId,
-			String documentRequestId,
-			ContainerStatus status,
-			int documentVersion,
-			List<SnapshotJson> history) {
-	}
+    record ContainerJson(
+            String containerId,
+            String documentRequestId,
+            ContainerStatus status,
+            int documentVersion,
+            List<SnapshotJson> history) {
+    }
 
-	record SnapshotJson(ContainerStatus status, int documentVersion, Instant changedAt) {
-	}
+    record SnapshotJson(ContainerStatus status, int documentVersion, Instant changedAt) {
+    }
 
-	record WebhookConfigJson(String customerId, boolean enabled, URI url, AuthJson auth) {
-	}
+    record WebhookConfigJson(String customerId, boolean enabled, URI url, AuthJson auth) {
+    }
 
-	record AuthJson(WebhookAuthType type) {
-	}
+    record AuthJson(WebhookAuthType type) {
+    }
 
 }

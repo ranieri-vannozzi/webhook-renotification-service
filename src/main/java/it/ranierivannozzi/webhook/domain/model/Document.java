@@ -9,12 +9,12 @@ import java.util.Optional;
  */
 public record Document(String requestId, String customerId, int currentVersion, List<DocumentVersion> versions) {
 
-	public Document {
-		versions = List.copyOf(versions);
-	}
+    public Document {
+        versions = List.copyOf(versions);
+    }
 
-	public Optional<DocumentVersion> findVersion(int version) {
-		return versions.stream().filter(v -> v.version() == version).findFirst();
-	}
+    public Optional<DocumentVersion> findVersion(int version) {
+        return versions.stream().filter(v -> v.version() == version).findFirst();
+    }
 
 }

@@ -9,22 +9,22 @@ import org.junit.jupiter.api.Test;
 
 class SimulatedLatencyTests {
 
-	@Test
-	void waitsAtLeastTheMinimum() {
-		SimulatedLatency latency = new SimulatedLatency(Duration.ofMillis(50), Duration.ofMillis(60));
+    @Test
+    void waitsAtLeastTheMinimum() {
+        SimulatedLatency latency = new SimulatedLatency(Duration.ofMillis(50), Duration.ofMillis(60));
 
-		long start = System.nanoTime();
-		latency.pause();
+        long start = System.nanoTime();
+        latency.pause();
 
-		assertThat(Duration.ofNanos(System.nanoTime() - start)).isGreaterThanOrEqualTo(Duration.ofMillis(50));
-	}
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isGreaterThanOrEqualTo(Duration.ofMillis(50));
+    }
 
-	@Test
-	void rejectsAnInvalidRange() {
-		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new SimulatedLatency(Duration.ofMillis(-1), Duration.ZERO));
-		assertThatIllegalArgumentException()
-				.isThrownBy(() -> new SimulatedLatency(Duration.ofSeconds(2), Duration.ofSeconds(1)));
-	}
+    @Test
+    void rejectsAnInvalidRange() {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new SimulatedLatency(Duration.ofMillis(-1), Duration.ZERO));
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new SimulatedLatency(Duration.ofSeconds(2), Duration.ofSeconds(1)));
+    }
 
 }

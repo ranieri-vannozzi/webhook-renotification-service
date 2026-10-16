@@ -20,17 +20,16 @@ import it.ranierivannozzi.webhook.application.port.in.OneShotServicePort;
 @RestController
 class OneShotController {
 
-	private final OneShotServicePort servicePort;
+    private final OneShotServicePort servicePort;
 
-	OneShotController(OneShotServicePort servicePort) {
-		this.servicePort = servicePort;
-	}
+    OneShotController(OneShotServicePort servicePort) {
+        this.servicePort = servicePort;
+    }
 
-	@PostMapping(path = ApiRoutes.WEBHOOK_ONESHOT, consumes = MediaType.APPLICATION_JSON_VALUE,
-			produces = MediaType.APPLICATION_JSON_VALUE)
-	List<OneShotItemResponse> send(@RequestBody List<@Nullable OneShotItemRequest> body) {
-		List<OneShotItem> items = body.stream().map(OneShotWebMapper::toItem).toList();
-		return servicePort.send(items).stream().map(OneShotWebMapper::toResponse).toList();
-	}
+    @PostMapping(path = ApiRoutes.WEBHOOK_ONESHOT, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    List<OneShotItemResponse> send(@RequestBody List<@Nullable OneShotItemRequest> body) {
+        List<OneShotItem> items = body.stream().map(OneShotWebMapper::toItem).toList();
+        return servicePort.send(items).stream().map(OneShotWebMapper::toResponse).toList();
+    }
 
 }

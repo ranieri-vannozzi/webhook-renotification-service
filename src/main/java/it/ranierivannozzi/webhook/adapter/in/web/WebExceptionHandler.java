@@ -24,25 +24,25 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 class WebExceptionHandler extends ResponseEntityExceptionHandler {
 
-	static final String NOT_A_JSON_ARRAY = "The body must be a JSON array of items, e.g. [ { \"requestId\": \"D-001\" } ]";
+    static final String NOT_A_JSON_ARRAY = "The body must be a JSON array of items, e.g. [ { \"requestId\": \"D-001\" } ]";
 
-	private static final Logger log = LoggerFactory.getLogger(WebExceptionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(WebExceptionHandler.class);
 
-	// unexpected errors are logged with their stack trace, but the caller gets only a 500 with the correlation id to quote
-	@ExceptionHandler(Exception.class)
-	ProblemDetail unexpected(Exception exception) {
-		log.error("Unexpected error serving the request", exception);
-		return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
-				"Unexpected error: quote the " + CorrelationIdFilter.X_CORRELATION_ID + " response header to support");
-	}
+    // unexpected errors are logged with their stack trace, but the caller gets only a 500 with the correlation id to quote
+    @ExceptionHandler(Exception.class)
+    ProblemDetail unexpected(Exception exception) {
+        log.error("Unexpected error serving the request", exception);
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Unexpected error: quote the " + CorrelationIdFilter.X_CORRELATION_ID + " response header to support");
+    }
 
-	// body is empty, e.g. an empty string or whitespace
-	// valid JSON but not an array, e.g. a number or boolean or simple object
-	@Override
-	protected @Nullable ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException exception,
-			HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-		ProblemDetail body = ProblemDetail.forStatusAndDetail(status, NOT_A_JSON_ARRAY);
-		return handleExceptionInternal(exception, body, headers, status, request);
-	}
+    // body is empty, e.g. an empty string or whitespace
+    // valid JSON but not an array, e.g. a number or boolean or simple object
+    @Override
+    protected @Nullable ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException exception,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail body = ProblemDetail.forStatusAndDetail(status, NOT_A_JSON_ARRAY);
+        return handleExceptionInternal(exception, body, headers, status, request);
+    }
 
 }

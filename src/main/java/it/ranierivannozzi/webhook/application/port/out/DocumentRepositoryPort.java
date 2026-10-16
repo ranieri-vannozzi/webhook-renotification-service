@@ -9,6 +9,6 @@ import it.ranierivannozzi.webhook.domain.model.Document;
  */
 public interface DocumentRepositoryPort {
 
-	Optional<Document> findByRequestId(String requestId);
+    Optional<Document> findByRequestId(String requestId);
 
 }

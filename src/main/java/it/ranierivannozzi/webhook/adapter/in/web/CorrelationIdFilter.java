@@ -23,31 +23,30 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 class CorrelationIdFilter extends OncePerRequestFilter {
 
-	static final String MDC_KEY = "correlationId";
-	static final String X_CORRELATION_ID = "X-Correlation-Id";
+    static final String MDC_KEY = "correlationId";
+    static final String X_CORRELATION_ID = "X-Correlation-Id";
 
-	private static final Pattern VALID_ID = Pattern.compile("[A-Za-z0-9-]{1,64}");
+    private static final Pattern VALID_ID = Pattern.compile("[A-Za-z0-9-]{1,64}");
 
-	@Override
-	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-			throws ServletException, IOException {
-		String correlationId = correlationIdOf(request);
-		MDC.put(MDC_KEY, correlationId);
-		response.setHeader(X_CORRELATION_ID, correlationId);
-		try {
-			chain.doFilter(request, response);
-		}
-		finally {
-			MDC.remove(MDC_KEY);
-		}
-	}
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws ServletException, IOException {
+        String correlationId = correlationIdOf(request);
+        MDC.put(MDC_KEY, correlationId);
+        response.setHeader(X_CORRELATION_ID, correlationId);
+        try {
+            chain.doFilter(request, response);
+        } finally {
+            MDC.remove(MDC_KEY);
+        }
+    }
 
-	private static String correlationIdOf(HttpServletRequest request) {
-		String correlationId = request.getHeader(X_CORRELATION_ID);
-		if (correlationId != null && VALID_ID.matcher(correlationId).matches()) {
-			return correlationId;
-		}
-		return UUID.randomUUID().toString();
-	}
+    private static String correlationIdOf(HttpServletRequest request) {
+        String correlationId = request.getHeader(X_CORRELATION_ID);
+        if (correlationId != null && VALID_ID.matcher(correlationId).matches()) {
+            return correlationId;
+        }
+        return UUID.randomUUID().toString();
+    }
 
 }

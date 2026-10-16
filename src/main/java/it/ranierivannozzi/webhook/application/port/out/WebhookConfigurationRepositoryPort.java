@@ -10,6 +10,6 @@ import it.ranierivannozzi.webhook.domain.model.WebhookConfiguration;
  */
 public interface WebhookConfigurationRepositoryPort {
 
-	Optional<WebhookConfiguration> findByCustomerId(String customerId);
+    Optional<WebhookConfiguration> findByCustomerId(String customerId);
 
 }

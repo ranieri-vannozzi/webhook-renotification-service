@@ -27,94 +27,94 @@ import it.ranierivannozzi.webhook.application.port.in.OneShotServicePort;
 @WebMvcTest(OneShotController.class)
 class OneShotControllerTests {
 
-	@Autowired
-	private MockMvcTester mvc;
+    @Autowired
+    private MockMvcTester mvc;
 
-	@MockitoBean
-	private OneShotServicePort servicePort;
+    @MockitoBean
+    private OneShotServicePort servicePort;
 
-	@Test
-	void writesOnlyTheFieldsTheContractDefinesForEachOutcome() {
-		OneShotItem queued = new OneShotItem("D-001", null);
-		OneShotItem failed = new OneShotItem("D-004", "delivered");
-		OneShotItem withoutId = new OneShotItem(null, "SENT");
-		given(servicePort.send(List.of(queued, failed, withoutId))).willReturn(List.of(
-				new ItemResult.Queued(queued),
-				new ItemResult.Failed(failed, FailedStep.CONTAINER_LOOKUP, "unknown container status 'delivered'"),
-				new ItemResult.Failed(withoutId, FailedStep.DOCUMENT_LOOKUP, "requestId is missing")));
+    @Test
+    void writesOnlyTheFieldsTheContractDefinesForEachOutcome() {
+        OneShotItem queued = new OneShotItem("D-001", null);
+        OneShotItem failed = new OneShotItem("D-004", "delivered");
+        OneShotItem withoutId = new OneShotItem(null, "SENT");
+        given(servicePort.send(List.of(queued, failed, withoutId))).willReturn(List.of(
+                new ItemResult.Queued(queued),
+                new ItemResult.Failed(failed, FailedStep.CONTAINER_LOOKUP, "unknown container status 'delivered'"),
+                new ItemResult.Failed(withoutId, FailedStep.DOCUMENT_LOOKUP, "requestId is missing")));
 
-		assertThat(post("""
-				[ { "requestId": "D-001" },
-				  { "requestId": "D-004", "containerStatus": "delivered" },
-				  { "containerStatus": "SENT" } ]
-				""")).hasStatusOk().bodyJson().isStrictlyEqualTo("""
-				[ { "requestId": "D-001", "outcome": "QUEUED" },
-				  { "requestId": "D-004", "containerStatus": "delivered", "outcome": "FAILED",
-				    "failedStep": "CONTAINER_LOOKUP", "error": "unknown container status 'delivered'" },
-				  { "requestId": null, "containerStatus": "SENT", "outcome": "FAILED",
-				    "failedStep": "DOCUMENT_LOOKUP", "error": "requestId is missing" } ]
-				""");
-	}
+        assertThat(post("""
+                [ { "requestId": "D-001" },
+                  { "requestId": "D-004", "containerStatus": "delivered" },
+                  { "containerStatus": "SENT" } ]
+                """)).hasStatusOk().bodyJson().isStrictlyEqualTo("""
+                [ { "requestId": "D-001", "outcome": "QUEUED" },
+                  { "requestId": "D-004", "containerStatus": "delivered", "outcome": "FAILED",
+                    "failedStep": "CONTAINER_LOOKUP", "error": "unknown container status 'delivered'" },
+                  { "requestId": null, "containerStatus": "SENT", "outcome": "FAILED",
+                    "failedStep": "DOCUMENT_LOOKUP", "error": "requestId is missing" } ]
+                """);
+    }
 
-	@Test
-	void turnsANullElementIntoAnItemWithoutRequestId() {
-		OneShotItem empty = new OneShotItem(null, null);
-		given(servicePort.send(List.of(empty))).willReturn(List.of(
-				new ItemResult.Failed(empty, FailedStep.DOCUMENT_LOOKUP, "requestId is missing")));
+    @Test
+    void turnsANullElementIntoAnItemWithoutRequestId() {
+        OneShotItem empty = new OneShotItem(null, null);
+        given(servicePort.send(List.of(empty))).willReturn(List.of(
+                new ItemResult.Failed(empty, FailedStep.DOCUMENT_LOOKUP, "requestId is missing")));
 
-		assertThat(post("[ null ]")).hasStatusOk().bodyJson().isStrictlyEqualTo("""
-				[ { "requestId": null, "outcome": "FAILED",
-				    "failedStep": "DOCUMENT_LOOKUP", "error": "requestId is missing" } ]
-				""");
-	}
+        assertThat(post("[ null ]")).hasStatusOk().bodyJson().isStrictlyEqualTo("""
+                [ { "requestId": null, "outcome": "FAILED",
+                    "failedStep": "DOCUMENT_LOOKUP", "error": "requestId is missing" } ]
+                """);
+    }
 
-	@Test
-	void answersAnEmptyListWithAnEmptyList() {
-		given(servicePort.send(List.of())).willReturn(List.of());
+    @Test
+    void answersAnEmptyListWithAnEmptyList() {
+        given(servicePort.send(List.of())).willReturn(List.of());
 
-		assertThat(post("[]")).hasStatusOk().bodyJson().isStrictlyEqualTo("[]");
-	}
+        assertThat(post("[]")).hasStatusOk().bodyJson().isStrictlyEqualTo("[]");
+    }
 
-	@Test
-	void rejectsABodyThatIsNotAJsonArray() {
-		assertThat(post("{ \"requestId\": \"D-001\" }"))
-				.hasStatus(HttpStatus.BAD_REQUEST)
-				.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
-				.bodyJson().extractingPath("$.detail").isEqualTo(WebExceptionHandler.NOT_A_JSON_ARRAY);
-		assertThat(post("not json")).hasStatus(HttpStatus.BAD_REQUEST);
-		assertThat(post("")).hasStatus(HttpStatus.BAD_REQUEST);
-		verify(servicePort, never()).send(anyList());
-	}
+    @Test
+    void rejectsABodyThatIsNotAJsonArray() {
+        assertThat(post("{ \"requestId\": \"D-001\" }"))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyJson().extractingPath("$.detail").isEqualTo(WebExceptionHandler.NOT_A_JSON_ARRAY);
+        assertThat(post("not json")).hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(post("")).hasStatus(HttpStatus.BAD_REQUEST);
+        verify(servicePort, never()).send(anyList());
+    }
 
-	@Test
-	void answersAnUnexpectedErrorWithAProblemBodyAndNoInternalDetail() {
-		given(servicePort.send(anyList())).willThrow(new IllegalStateException("secret internal detail"));
+    @Test
+    void answersAnUnexpectedErrorWithAProblemBodyAndNoInternalDetail() {
+        given(servicePort.send(anyList())).willThrow(new IllegalStateException("secret internal detail"));
 
-		assertThat(post("[ { \"requestId\": \"D-001\" } ]"))
-				.hasStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-				.hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
-				.bodyText().doesNotContain("secret");
-	}
+        assertThat(post("[ { \"requestId\": \"D-001\" } ]"))
+                .hasStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyText().doesNotContain("secret");
+    }
 
-	@Test
-	void returnsTheCorrelationIdReceivedOrANewOne() {
-		given(servicePort.send(anyList())).willReturn(List.of());
+    @Test
+    void returnsTheCorrelationIdReceivedOrANewOne() {
+        given(servicePort.send(anyList())).willReturn(List.of());
 
-		assertThat(post("[]").header(CorrelationIdFilter.X_CORRELATION_ID, "op-tool-123"))
-				.headers().hasValue(CorrelationIdFilter.X_CORRELATION_ID, "op-tool-123");
-		assertThat(post("[]").header(CorrelationIdFilter.X_CORRELATION_ID, "forged\nlog line"))
-				.headers().satisfies(headers -> assertThat(headers.getFirst(CorrelationIdFilter.X_CORRELATION_ID))
-						.isNotBlank().isNotEqualTo("forged\nlog line"));
-	}
+        assertThat(post("[]").header(CorrelationIdFilter.X_CORRELATION_ID, "op-tool-123"))
+                .headers().hasValue(CorrelationIdFilter.X_CORRELATION_ID, "op-tool-123");
+        assertThat(post("[]").header(CorrelationIdFilter.X_CORRELATION_ID, "forged\nlog line"))
+                .headers().satisfies(headers -> assertThat(headers.getFirst(CorrelationIdFilter.X_CORRELATION_ID))
+                        .isNotBlank().isNotEqualTo("forged\nlog line"));
+    }
 
-	@Test
-	void rejectsABodyThatIsNotJson() {
-		assertThat(mvc.post().uri(ApiRoutes.WEBHOOK_ONESHOT).contentType(MediaType.TEXT_PLAIN).content("D-001"))
-				.hasStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-	}
+    @Test
+    void rejectsABodyThatIsNotJson() {
+        assertThat(mvc.post().uri(ApiRoutes.WEBHOOK_ONESHOT).contentType(MediaType.TEXT_PLAIN).content("D-001"))
+                .hasStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
 
-	private MockMvcTester.MockMvcRequestBuilder post(String body) {
-		return mvc.post().uri(ApiRoutes.WEBHOOK_ONESHOT).contentType(MediaType.APPLICATION_JSON).content(body);
-	}
+    private MockMvcTester.MockMvcRequestBuilder post(String body) {
+        return mvc.post().uri(ApiRoutes.WEBHOOK_ONESHOT).contentType(MediaType.APPLICATION_JSON).content(body);
+    }
 
 }

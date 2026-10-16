@@ -1,0 +1,20 @@
+# Eclipse formatter settings applied by Spotless (./mvnw spotless:apply, checked by ./verify.sh).
+# Anything not listed here keeps the Eclipse built-in default.
+
+# Lines up to 160 characters, indented with 4 spaces
+org.eclipse.jdt.core.formatter.lineSplit=160
+org.eclipse.jdt.core.formatter.comment.line_length=160
+org.eclipse.jdt.core.formatter.tabulation.char=space
+org.eclipse.jdt.core.formatter.tabulation.size=4
+org.eclipse.jdt.core.formatter.indentation.size=4
+
+# Keep the line breaks written on purpose (e.g. one argument per line) instead of joining them up to 160 characters
+org.eclipse.jdt.core.formatter.join_wrapped_lines=false
+
+# One enum constant per line
+org.eclipse.jdt.core.formatter.alignment_for_enum_constants=49
+
+# Leave comments as written: the examples in the Javadoc are laid out line by line
+org.eclipse.jdt.core.formatter.comment.format_javadoc_comments=false
+org.eclipse.jdt.core.formatter.comment.format_block_comments=false
+org.eclipse.jdt.core.formatter.comment.format_line_comments=false

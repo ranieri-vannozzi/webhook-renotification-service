@@ -16,18 +16,18 @@ import it.ranierivannozzi.webhook.domain.model.Container;
 @Repository
 public class InMemoryContainerRepository implements ContainerRepositoryPort {
 
-	private final SimulatedLatency latency;
-	private final Map<String, List<Container>> byDocumentMap;
+    private final SimulatedLatency latency;
+    private final Map<String, List<Container>> byDocumentMap;
 
-	public InMemoryContainerRepository(Dataset dataset, SimulatedLatency latency) {
-		this.latency = latency;
-		this.byDocumentMap = dataset.containers().stream().collect(Collectors.groupingBy(Container::documentRequestId));
-	}
+    public InMemoryContainerRepository(Dataset dataset, SimulatedLatency latency) {
+        this.latency = latency;
+        this.byDocumentMap = dataset.containers().stream().collect(Collectors.groupingBy(Container::documentRequestId));
+    }
 
-	@Override
-	public List<Container> findByDocumentRequestId(String requestId) {
-		latency.pause();
-		return List.copyOf(byDocumentMap.getOrDefault(requestId, List.of()));
-	}
+    @Override
+    public List<Container> findByDocumentRequestId(String requestId) {
+        latency.pause();
+        return List.copyOf(byDocumentMap.getOrDefault(requestId, List.of()));
+    }
 
 }

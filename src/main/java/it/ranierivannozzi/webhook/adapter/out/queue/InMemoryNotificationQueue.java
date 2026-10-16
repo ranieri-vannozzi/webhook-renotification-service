@@ -43,108 +43,108 @@ import it.ranierivannozzi.webhook.domain.model.NotificationMessage;
 @Component
 public class InMemoryNotificationQueue implements NotificationQueuePort {
 
-	private final int maxAttempts;
-	private final Duration initialBackoff;
+    private final int maxAttempts;
+    private final Duration initialBackoff;
 
-	private final InstantSource clock;
+    private final InstantSource clock;
 
-	private final Deque<QueuedNotification> ready = new ArrayDeque<>();
-	private final List<QueuedNotification> deadLetters = new ArrayList<>();
-	private final PriorityQueue<Retry> retries = new PriorityQueue<>(Comparator.comparing(Retry::dueAt));
+    private final Deque<QueuedNotification> ready = new ArrayDeque<>();
+    private final List<QueuedNotification> deadLetters = new ArrayList<>();
+    private final PriorityQueue<Retry> retries = new PriorityQueue<>(Comparator.comparing(Retry::dueAt));
 
-	private static final Logger log = LoggerFactory.getLogger(InMemoryNotificationQueue.class);
+    private static final Logger log = LoggerFactory.getLogger(InMemoryNotificationQueue.class);
 
-	/**
-	 * @param clock tells when a scheduled retry is due
-	 * @param maxAttempts how many deliveries a message gets before going to the dead letters
-	 * @param initialBackoff how long the first retry waits, doubled at each further one
-	 */
-	public InMemoryNotificationQueue(InstantSource clock, @Value("${oneshot.queue-max-attempts}") int maxAttempts,
-			@Value("${oneshot.queue-initial-backoff}") Duration initialBackoff) {
-		if (maxAttempts < 1) {
-			throw new IllegalArgumentException("maxAttempts must be at least 1, was " + maxAttempts);
-		}
-		if (!initialBackoff.isPositive()) {
-			throw new IllegalArgumentException("initialBackoff must be positive, was " + initialBackoff);
-		}
-		this.clock = clock;
-		this.maxAttempts = maxAttempts;
-		this.initialBackoff = initialBackoff;
-	}
+    /**
+     * @param clock tells when a scheduled retry is due
+     * @param maxAttempts how many deliveries a message gets before going to the dead letters
+     * @param initialBackoff how long the first retry waits, doubled at each further one
+     */
+    public InMemoryNotificationQueue(InstantSource clock, @Value("${oneshot.queue-max-attempts}") int maxAttempts,
+            @Value("${oneshot.queue-initial-backoff}") Duration initialBackoff) {
+        if (maxAttempts < 1) {
+            throw new IllegalArgumentException("maxAttempts must be at least 1, was " + maxAttempts);
+        }
+        if (!initialBackoff.isPositive()) {
+            throw new IllegalArgumentException("initialBackoff must be positive, was " + initialBackoff);
+        }
+        this.clock = clock;
+        this.maxAttempts = maxAttempts;
+        this.initialBackoff = initialBackoff;
+    }
 
-	/**
-	 * Step 1. The message gets a new id and its first attempt, and waits in {@code ready}.
-	 */
-	@Override
-	public synchronized void enqueue(NotificationMessage message) {
-		QueuedNotification queued = new QueuedNotification(UUID.randomUUID().toString(), 1, message);
-		ready.addLast(queued);
-		log.info("Enqueued notification {} for document {} version {} in status {} to {}", queued.id(),
-				message.requestId(), message.document().version(), message.containerStatus(), message.webhookUrl());
-	}
+    /**
+     * Step 1. The message gets a new id and its first attempt, and waits in {@code ready}.
+     */
+    @Override
+    public synchronized void enqueue(NotificationMessage message) {
+        QueuedNotification queued = new QueuedNotification(UUID.randomUUID().toString(), 1, message);
+        ready.addLast(queued);
+        log.info("Enqueued notification {} for document {} version {} in status {} to {}", queued.id(),
+                message.requestId(), message.document().version(), message.containerStatus(), message.webhookUrl());
+    }
 
-	/**
-	 * NOW ONLY FOR TEST - Step 2, after step 4 for the retries that are due.
-	 * Move from retries the element with backoff over into ready queue.
-	 *
-	 * @return the message to deliver, empty when none is ready
-	 */
-	public synchronized Optional<QueuedNotification> poll() {
-		moveDueRetriesToReady();
-		return Optional.ofNullable(ready.pollFirst());
-	}
+    /**
+     * NOW ONLY FOR TEST - Step 2, after step 4 for the retries that are due.
+     * Move from retries the element with backoff over into ready queue.
+     *
+     * @return the message to deliver, empty when none is ready
+     */
+    public synchronized Optional<QueuedNotification> poll() {
+        moveDueRetriesToReady();
+        return Optional.ofNullable(ready.pollFirst());
+    }
 
-	/**
-	 * NOW ONLY FOR TEST - Step 3. The delivery failed: the message is delivered again after the backoff of its attempt, or goes to the dead
-	 * letters once it has used all of its attempts.
-	 *
-	 * @param failed the message as {@link #poll()} returned it
-	 */
-	public synchronized void retry(QueuedNotification failed) {
+    /**
+     * NOW ONLY FOR TEST - Step 3. The delivery failed: the message is delivered again after the backoff of its attempt, or goes to the dead
+     * letters once it has used all of its attempts.
+     *
+     * @param failed the message as {@link #poll()} returned it
+     */
+    public synchronized void retry(QueuedNotification failed) {
 
-		if (failed.attempt() >= maxAttempts) {
-			deadLetters.add(failed);
-			log.error("Notification {} for document {} failed {} times: moved to the dead letters", failed.id(),
-					failed.message().requestId(), failed.attempt());
-			return;
-		}
+        if (failed.attempt() >= maxAttempts) {
+            deadLetters.add(failed);
+            log.error("Notification {} for document {} failed {} times: moved to the dead letters", failed.id(),
+                    failed.message().requestId(), failed.attempt());
+            return;
+        }
 
-		Duration backoff = initialBackoff.multipliedBy(1L << (failed.attempt() - 1));
+        Duration backoff = initialBackoff.multipliedBy(1L << (failed.attempt() - 1));
 
-		retries.add(new Retry(clock.instant().plus(backoff),
-				new QueuedNotification(failed.id(), failed.attempt() + 1, failed.message())));
+        retries.add(new Retry(clock.instant().plus(backoff),
+                new QueuedNotification(failed.id(), failed.attempt() + 1, failed.message())));
 
-		log.warn("Notification {} for document {} failed attempt {}: retrying in {}", failed.id(),
-				failed.message().requestId(), failed.attempt(), backoff);
-	}
+        log.warn("Notification {} for document {} failed attempt {}: retrying in {}", failed.id(),
+                failed.message().requestId(), failed.attempt(), backoff);
+    }
 
-	/**
-	 * @return the messages ready for delivery, oldest first
-	 */
-	public synchronized List<NotificationMessage> messages() {
-		moveDueRetriesToReady();
-		return ready.stream().map(QueuedNotification::message).toList();
-	}
+    /**
+     * @return the messages ready for delivery, oldest first
+     */
+    public synchronized List<NotificationMessage> messages() {
+        moveDueRetriesToReady();
+        return ready.stream().map(QueuedNotification::message).toList();
+    }
 
-	/**
-	 * NOW ONLY FOR TEST
-	 * @return the messages that used all of their attempts, oldest first
-	 */
-	public synchronized List<QueuedNotification> deadLetters() {
-		return List.copyOf(deadLetters);
-	}
+    /**
+     * NOW ONLY FOR TEST
+     * @return the messages that used all of their attempts, oldest first
+     */
+    public synchronized List<QueuedNotification> deadLetters() {
+        return List.copyOf(deadLetters);
+    }
 
-	/**
-	 * Step 4. The retries whose backoff is over go back to {@code ready}, after the messages already there.
-	 */
-	private void moveDueRetriesToReady() {
-		Instant now = clock.instant();
-		while (!retries.isEmpty() && !retries.peek().dueAt().isAfter(now)) {
-			ready.addLast(retries.poll().notification());
-		}
-	}
+    /**
+     * Step 4. The retries whose backoff is over go back to {@code ready}, after the messages already there.
+     */
+    private void moveDueRetriesToReady() {
+        Instant now = clock.instant();
+        while (!retries.isEmpty() && !retries.peek().dueAt().isAfter(now)) {
+            ready.addLast(retries.poll().notification());
+        }
+    }
 
-	private record Retry(Instant dueAt, QueuedNotification notification) {
-	}
+    private record Retry(Instant dueAt, QueuedNotification notification) {
+    }
 
 }

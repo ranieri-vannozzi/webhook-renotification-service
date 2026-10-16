@@ -19,44 +19,44 @@ import com.tngtech.archunit.lang.ArchRule;
 @AnalyzeClasses(packages = "it.ranierivannozzi.webhook", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTests {
 
-	/**
-	 * The config package declares the beans that are not components, such as the dataset read by the dataset adapter,
- * so it is allowed to know every layer.
-	 */
-	@ArchTest
-	static final ArchRule hexagonalLayers = onionArchitecture()
-			.domainModels("..domain.model..")
-			.domainServices("..domain.resolution..")
-			.applicationServices("..application..")
-			.adapter("web", "..adapter.in.web..")
-			.adapter("dataset", "..adapter.out.dataset..")
-			.adapter("queue", "..adapter.out.queue..")
-			.withOptionalLayers(true)
-			.ignoreDependency(resideInAPackage("..config.."), alwaysTrue());
+    /**
+     * The config package declares the beans that are not components, such as the dataset read by the dataset adapter,
+    * so it is allowed to know every layer.
+     */
+    @ArchTest
+    static final ArchRule hexagonalLayers = onionArchitecture()
+            .domainModels("..domain.model..")
+            .domainServices("..domain.resolution..")
+            .applicationServices("..application..")
+            .adapter("web", "..adapter.in.web..")
+            .adapter("dataset", "..adapter.out.dataset..")
+            .adapter("queue", "..adapter.out.queue..")
+            .withOptionalLayers(true)
+            .ignoreDependency(resideInAPackage("..config.."), alwaysTrue());
 
-	@ArchTest
-	static final ArchRule domainIsFrameworkFree = classes()
-			.that().resideInAPackage("..domain..")
-			.should().onlyDependOnClassesThat()
-			.resideInAnyPackage("java..", "org.jspecify..", "..domain..")
-			.allowEmptyShould(true);
+    @ArchTest
+    static final ArchRule domainIsFrameworkFree = classes()
+            .that().resideInAPackage("..domain..")
+            .should().onlyDependOnClassesThat()
+            .resideInAnyPackage("java..", "org.jspecify..", "..domain..")
+            .allowEmptyShould(true);
 
-	/**
-	 * Besides the domain, the application may use the SLF4J logging facade and the Spring annotations that declare
-	 * and configure a bean, but nothing else of Spring (web, Jackson, ...): HTTP and JSON stay in the adapters.
-	 */
-	@ArchTest
-	static final ArchRule applicationUsesOnlyBeanAnnotations = classes()
-			.that().resideInAPackage("..application..")
-			.should().onlyDependOnClassesThat()
-			.resideInAnyPackage("java..", "org.jspecify..", "org.slf4j..", "org.springframework.stereotype..",
-					"org.springframework.beans.factory.annotation..", "..domain..", "..application..")
-			.allowEmptyShould(true);
+    /**
+     * Besides the domain, the application may use the SLF4J logging facade and the Spring annotations that declare
+     * and configure a bean, but nothing else of Spring (web, Jackson, ...): HTTP and JSON stay in the adapters.
+     */
+    @ArchTest
+    static final ArchRule applicationUsesOnlyBeanAnnotations = classes()
+            .that().resideInAPackage("..application..")
+            .should().onlyDependOnClassesThat()
+            .resideInAnyPackage("java..", "org.jspecify..", "org.slf4j..", "org.springframework.stereotype..",
+                    "org.springframework.beans.factory.annotation..", "..domain..", "..application..")
+            .allowEmptyShould(true);
 
-	@ArchTest
-	static final ArchRule adaptersGoThroughPorts = noClasses()
-			.that().resideInAPackage("..adapter..")
-			.should().dependOnClassesThat().resideInAPackage("..application.service..")
-			.allowEmptyShould(true);
+    @ArchTest
+    static final ArchRule adaptersGoThroughPorts = noClasses()
+            .that().resideInAPackage("..adapter..")
+            .should().dependOnClassesThat().resideInAPackage("..application.service..")
+            .allowEmptyShould(true);
 
 }

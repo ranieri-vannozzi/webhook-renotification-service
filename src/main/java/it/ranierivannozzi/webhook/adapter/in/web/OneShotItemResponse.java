@@ -14,15 +14,15 @@ import it.ranierivannozzi.webhook.application.port.in.FailedStep;
  */
 @JsonInclude(Include.NON_NULL)
 public record OneShotItemResponse(
-		@JsonInclude(Include.ALWAYS) @Nullable String requestId,
-		@Nullable String containerStatus,
-		Outcome outcome,
-		@Nullable FailedStep failedStep,
-		@Nullable String error) {
+        @JsonInclude(Include.ALWAYS) @Nullable String requestId,
+        @Nullable String containerStatus,
+        Outcome outcome,
+        @Nullable FailedStep failedStep,
+        @Nullable String error) {
 
-	public enum Outcome {
-		QUEUED,
-		FAILED
-	}
+    public enum Outcome {
+        QUEUED,
+        FAILED
+    }
 
 }

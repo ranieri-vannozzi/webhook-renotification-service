@@ -8,6 +8,6 @@ import it.ranierivannozzi.webhook.domain.model.NotificationMessage;
  */
 public interface NotificationQueuePort {
 
-	void enqueue(NotificationMessage message);
+    void enqueue(NotificationMessage message);
 
 }

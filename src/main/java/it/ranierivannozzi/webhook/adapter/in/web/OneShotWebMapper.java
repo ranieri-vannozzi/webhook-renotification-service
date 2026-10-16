@@ -11,26 +11,26 @@ import it.ranierivannozzi.webhook.application.port.in.OneShotItem;
  */
 final class OneShotWebMapper {
 
-	private OneShotWebMapper() {
-	}
+    private OneShotWebMapper() {
+    }
 
-	/**
-	 * A {@code null} element of the request list becomes an item without {@code requestId}, which fails on its own.
-	 */
-	static OneShotItem toItem(@Nullable OneShotItemRequest request) {
-		return request == null
-				? new OneShotItem(null, null)
-				: new OneShotItem(request.requestId(), request.containerStatus());
-	}
+    /**
+     * A {@code null} element of the request list becomes an item without {@code requestId}, which fails on its own.
+     */
+    static OneShotItem toItem(@Nullable OneShotItemRequest request) {
+        return request == null
+                ? new OneShotItem(null, null)
+                : new OneShotItem(request.requestId(), request.containerStatus());
+    }
 
-	static OneShotItemResponse toResponse(ItemResult result) {
-		OneShotItem originalItem = result.originalItem();
-		return switch (result) {
-			case ItemResult.Queued queued -> new OneShotItemResponse(originalItem.requestId(),
-					originalItem.containerStatus(), Outcome.QUEUED, null, null);
-			case ItemResult.Failed failed -> new OneShotItemResponse(originalItem.requestId(),
-					originalItem.containerStatus(), Outcome.FAILED, failed.step(), failed.error());
-		};
-	}
+    static OneShotItemResponse toResponse(ItemResult result) {
+        OneShotItem originalItem = result.originalItem();
+        return switch (result) {
+            case ItemResult.Queued queued -> new OneShotItemResponse(originalItem.requestId(),
+                    originalItem.containerStatus(), Outcome.QUEUED, null, null);
+            case ItemResult.Failed failed -> new OneShotItemResponse(originalItem.requestId(),
+                    originalItem.containerStatus(), Outcome.FAILED, failed.step(), failed.error());
+        };
+    }
 
 }

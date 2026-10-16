@@ -7,11 +7,11 @@ import java.net.URI;
  * without reading the source systems again.
  */
 public record NotificationMessage(
-		String requestId,
-		String customerId,
-		String containerId,
-		DocumentVersion document,
-		ContainerStatus containerStatus,
-		URI webhookUrl,
-		WebhookAuthType authType) {
+        String requestId,
+        String customerId,
+        String containerId,
+        DocumentVersion document,
+        ContainerStatus containerStatus,
+        URI webhookUrl,
+        WebhookAuthType authType) {
 }

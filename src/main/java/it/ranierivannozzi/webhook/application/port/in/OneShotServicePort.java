@@ -7,11 +7,11 @@ import java.util.List;
  */
 public interface OneShotServicePort {
 
-	/**
-	 * Processes every item independently: a failing item does not stop the others.
-	 *
-	 * @return one result per item, in the same order
-	 */
-	List<ItemResult> send(List<OneShotItem> items);
+    /**
+     * Processes every item independently: a failing item does not stop the others.
+     *
+     * @return one result per item, in the same order
+     */
+    List<ItemResult> send(List<OneShotItem> items);
 
 }
