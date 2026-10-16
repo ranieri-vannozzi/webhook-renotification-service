@@ -1,0 +1,10 @@
+# Git hooks managed by Lefthook (https://lefthook.dev). Optional: CI checks the format anyway through ./verify.sh.
+# Activate them once per clone with: lefthook install
+
+pre-commit:
+  commands:
+    format:
+      # Formats the code when the commit contains Java files, and adds the reformatted files to the commit
+      glob: "*.java"
+      run: ./format.sh -q
+      stage_fixed: true
