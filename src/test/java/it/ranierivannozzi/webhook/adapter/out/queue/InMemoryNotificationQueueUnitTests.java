@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Currency;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -18,11 +19,18 @@ import it.ranierivannozzi.webhook.domain.model.WebhookAuthType;
 
 class InMemoryNotificationQueueUnitTests {
 
+    // The wait before the first retry. It doubles at each further retry: 30s, 1m, 2m, ...
+    // It is a test value: in the application it comes from application.yaml (oneshot.queue-initial-backoff).
     private static final Duration BACKOFF = Duration.ofSeconds(30);
 
+    // The current time seen by the queue. The test moves it forward with advance(), so it never waits.
     private final AtomicReference<Instant> now = new AtomicReference<>(Instant.EPOCH);
 
-    private final InMemoryNotificationQueue queue = new InMemoryNotificationQueue(now::get, 3, BACKOFF);
+    // A fake clock: when the queue asks for the time, it gets the value of now.
+    private final InstantSource clock = now::get;
+
+    // A queue with at most 3 delivery attempts (the first one and 2 retries) and a first backoff of 30 seconds.
+    private final InMemoryNotificationQueue queue = new InMemoryNotificationQueue(clock, 3, BACKOFF);
 
     @Test
     void deliversTheMessagesInArrivalOrder() {

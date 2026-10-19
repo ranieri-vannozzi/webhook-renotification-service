@@ -27,9 +27,11 @@ import it.ranierivannozzi.webhook.application.port.in.OneShotServicePort;
 @WebMvcTest(OneShotController.class)
 class OneShotControllerSliceTests {
 
+    // Sends HTTP requests to the controller without starting a real server.
     @Autowired
     private MockMvcTester mvc;
 
+    // A Mockito mock of the use case: each test decides what it returns with given(...).
     @MockitoBean
     private OneShotServicePort servicePort;
 

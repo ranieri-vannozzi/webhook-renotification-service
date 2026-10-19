@@ -28,6 +28,7 @@ import it.ranierivannozzi.webhook.domain.resolution.Resolution.Resolved;
  */
 class DocumentStateResolverUnitTests {
 
+    // Requests without containerStatus: the resolver picks the latest state (latest version and its container status).
     @Nested
     class WithoutRequestedStatus {
 
@@ -117,6 +118,7 @@ class DocumentStateResolverUnitTests {
 
     }
 
+    // Requests with containerStatus: the resolver looks for that status in the container history.
     @Nested
     class WithRequestedStatus {
 
@@ -241,9 +243,7 @@ class DocumentStateResolverUnitTests {
         return new Document(requestId, "CUST-A", current, history);
     }
 
-    /**
-     * The current status and version of the container are those of its last snapshot.
-     */
+    // The current status and version of the container are those of its last snapshot.
     private static Container container(String containerId, ContainerSnapshot... history) {
         ContainerSnapshot last = history[history.length - 1];
         return new Container(containerId, "D-X", last.status(), last.documentVersion(), List.of(history));

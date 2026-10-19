@@ -21,9 +21,11 @@ import it.ranierivannozzi.webhook.domain.model.ContainerStatus;
 @AutoConfigureMockMvc
 class OneShotE2ETests {
 
+    // Sends HTTP requests to the whole application without starting a real server.
     @Autowired
     private MockMvcTester mvc;
 
+    // The real queue bean of the application, read to check what the request enqueued.
     @Autowired
     private InMemoryNotificationQueue queue;
 

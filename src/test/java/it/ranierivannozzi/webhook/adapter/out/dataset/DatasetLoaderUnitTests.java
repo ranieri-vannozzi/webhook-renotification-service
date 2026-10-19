@@ -20,6 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DatasetLoaderUnitTests {
 
+    // The loader under test, with a plain Jackson mapper: no Spring context is needed.
     private final DatasetLoader loader = new DatasetLoader(JsonMapper.builder().build());
 
     @Test

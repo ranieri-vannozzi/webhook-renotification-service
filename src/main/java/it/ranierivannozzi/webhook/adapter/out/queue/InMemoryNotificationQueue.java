@@ -111,6 +111,9 @@ public class InMemoryNotificationQueue implements NotificationQueuePort {
 
         Duration backoff = initialBackoff.multipliedBy(1L << (failed.attempt() - 1));
 
+        // The retry is due at "now + backoff". Nothing waits here: the queue only stores this time and compares it with
+        // the clock at the next poll(). The clock is the real one in the application and a fake one in the tests, so
+        // the tests can move the time forward without waiting.
         retries.add(new Retry(clock.instant().plus(backoff),
                 new QueuedNotification(failed.id(), failed.attempt() + 1, failed.message())));
 

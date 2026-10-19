@@ -19,10 +19,8 @@ import com.tngtech.archunit.lang.ArchRule;
 @AnalyzeClasses(packages = "it.ranierivannozzi.webhook", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTests {
 
-    /**
-     * The config package declares the beans that are not components, such as the dataset read by the dataset adapter,
-    * so it is allowed to know every layer.
-     */
+    // The config package declares the beans that are not components, such as the dataset read by the dataset adapter,
+    // so it is allowed to know every layer.
     @ArchTest
     static final ArchRule hexagonalLayers = onionArchitecture()
             .domainModels("..domain.model..")
@@ -34,6 +32,7 @@ class ArchitectureTests {
             .withOptionalLayers(true)
             .ignoreDependency(resideInAPackage("..config.."), alwaysTrue());
 
+    // The domain uses only the JDK, JSpecify and itself: no Spring, no Jackson.
     @ArchTest
     static final ArchRule domainIsFrameworkFree = classes()
             .that().resideInAPackage("..domain..")
@@ -41,10 +40,8 @@ class ArchitectureTests {
             .resideInAnyPackage("java..", "org.jspecify..", "..domain..")
             .allowEmptyShould(true);
 
-    /**
-     * Besides the domain, the application may use the SLF4J logging facade and the Spring annotations that declare
-     * and configure a bean, but nothing else of Spring (web, Jackson, ...): HTTP and JSON stay in the adapters.
-     */
+    // Besides the domain, the application may use the SLF4J logging facade and the Spring annotations that declare
+    // and configure a bean, but nothing else of Spring (web, Jackson, ...): HTTP and JSON stay in the adapters.
     @ArchTest
     static final ArchRule applicationUsesOnlyBeanAnnotations = classes()
             .that().resideInAPackage("..application..")
@@ -53,6 +50,7 @@ class ArchitectureTests {
                     "org.springframework.beans.factory.annotation..", "..domain..", "..application..")
             .allowEmptyShould(true);
 
+    // The adapters call the use case through its port, never the service class directly.
     @ArchTest
     static final ArchRule adaptersGoThroughPorts = noClasses()
             .that().resideInAPackage("..adapter..")

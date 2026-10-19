@@ -48,46 +48,72 @@ class OneShotServiceUnitTests {
 
     private static final URI CUST_A_URL = URI.create("https://hooks.cliente-a.example/einvoice");
 
-    private final Map<String, Document> documentsById = new HashMap<>();
-    private final List<NotificationMessage> queued = new CopyOnWriteArrayList<>();
-    private final Map<String, AtomicInteger> documentLookups = new ConcurrentHashMap<>();
-    private final Map<String, List<Container>> containersByDocument = new HashMap<>();
-    private final Map<String, WebhookConfiguration> configurationsByCustomer = new HashMap<>();
+    // The maps holding the dataset. The keys are the requestId for documents and containers, and the customerId for configurations.
+    private final Map<String, Document> documentsByIdMap = new HashMap<>();
+    private final Map<String, List<Container>> containersByDocumentMap = new HashMap<>();
+    private final Map<String, WebhookConfiguration> configurationsByCustomerMap = new HashMap<>();
 
-    private NotificationQueuePort notificationQueuePort = queued::add;
-    private ContainerRepositoryPort containerRepositoryPort = id -> containersByDocument.getOrDefault(id, List.of());
-    private WebhookConfigurationRepositoryPort webhookConfigurationRepositoryPort = id -> Optional
-            .ofNullable(configurationsByCustomer.get(id));
+    // The list of queued messages, to check that the service sends the expected messages to the queue.
+    // It is thread-safe because the items are processed in parallel.
+    private final List<NotificationMessage> queued = new CopyOnWriteArrayList<>();
+
+    // The number of lookups per requestId, filled by the documents port below. Thread-safe for the same reason.
+    private final Map<String, AtomicInteger> documentLookups = new ConcurrentHashMap<>();
+
+    // Documents port: it counts the lookups per requestId, to check that duplicate items are looked up only once.
     private DocumentRepositoryPort documentRepositoryPort = id -> {
         documentLookups.computeIfAbsent(id, key -> new AtomicInteger()).incrementAndGet();
-        return Optional.ofNullable(documentsById.get(id));
+        return Optional.ofNullable(documentsByIdMap.get(id));
     };
+
+    // Containers port.
+    private ContainerRepositoryPort containerRepositoryPort = id -> containersByDocumentMap.getOrDefault(id, List.of());
+
+    // Webhook configurations port.
+    private WebhookConfigurationRepositoryPort webhookConfigurationRepositoryPort = id -> Optional
+            .ofNullable(configurationsByCustomerMap.get(id));
+
+    // Notification queue port: it stores the queued messages in a list.
+    private NotificationQueuePort notificationQueuePort = queued::add;
 
     @BeforeEach
     void dataset() {
+        // Add the documents and their containers. The versions and the snapshots simulate different states.
         add(document("D-001", "CUST-A", 1, 2, 3), container("C-001", "D-001",
                 snapshot(SENT, 1, "2026-09-01T09:00:10Z"),
                 snapshot(DELIVERED, 2, "2026-09-01T09:05:10Z"),
                 snapshot(ACCEPTED, 3, "2026-09-02T14:30:10Z")));
+
         add(document("D-004", "CUST-B", 1, 2), container("C-004", "D-004",
                 snapshot(SENT, 1, "2026-09-07T07:30:10Z"),
                 snapshot(DELIVERED, 2, "2026-09-07T07:31:10Z")));
+
         add(document("D-005", "CUST-C", 1), container("C-005", "D-005",
                 snapshot(SENT, 1, "2026-09-08T12:00:10Z")));
+
         add(document("D-006", "CUST-D", 1, 2), container("C-006", "D-006",
                 snapshot(SENT, 1, "2026-09-09T15:00:10Z"),
                 snapshot(ACCEPTED, 2, "2026-09-09T15:20:10Z")));
+
         add(document("D-007", "CUST-A", 1, 3), container("C-007", "D-007",
                 snapshot(SENT, 1, "2026-09-10T09:00:10Z"),
                 snapshot(DELIVERED, 2, "2026-09-10T18:00:00Z"),
                 snapshot(ACCEPTED, 3, "2026-09-11T09:00:10Z")));
-        documentsById.put("D-NC", document("D-NC", "CUST-A", 1));
 
-        configurationsByCustomer.put("CUST-A", new WebhookConfiguration("CUST-A", true, CUST_A_URL,
+        // Add a document without a container, to simulate a missing container.
+        documentsByIdMap.put("D-NC", document("D-NC", "CUST-A", 1));
+
+        // Add the webhook configurations. CUST-C has no configuration on purpose.
+        // CUST-A: enabled, BASIC authentication.
+        configurationsByCustomerMap.put("CUST-A", new WebhookConfiguration("CUST-A", true, CUST_A_URL,
                 WebhookAuthType.BASIC));
-        configurationsByCustomer.put("CUST-B", new WebhookConfiguration("CUST-B", true,
+
+        // CUST-B: enabled, a different URL and OAUTH2 authentication.
+        configurationsByCustomerMap.put("CUST-B", new WebhookConfiguration("CUST-B", true,
                 URI.create("https://api.cliente-b.example/v2/notify"), WebhookAuthType.OAUTH2));
-        configurationsByCustomer.put("CUST-D", new WebhookConfiguration("CUST-D", false,
+
+        // CUST-D: it has a configuration, but the webhook is disabled.
+        configurationsByCustomerMap.put("CUST-D", new WebhookConfiguration("CUST-D", false,
                 URI.create("https://cliente-d.example/hook"), WebhookAuthType.HEADER));
     }
 
@@ -265,8 +291,8 @@ class OneShotServiceUnitTests {
     }
 
     private void add(Document document, Container container) {
-        documentsById.put(document.requestId(), document);
-        containersByDocument.put(document.requestId(), List.of(container));
+        documentsByIdMap.put(document.requestId(), document);
+        containersByDocumentMap.put(document.requestId(), List.of(container));
     }
 
     private static void assertFailed(ItemResult result, FailedStep step, String error) {

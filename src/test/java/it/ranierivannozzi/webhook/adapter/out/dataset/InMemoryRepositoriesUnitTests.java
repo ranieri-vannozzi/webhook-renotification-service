@@ -11,6 +11,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class InMemoryRepositoriesUnitTests {
 
+    // The real dataset.json, loaded again for each test.
     private final Dataset dataset = new DatasetLoader(JsonMapper.builder().build())
             .load(new ClassPathResource("dataset/dataset.json"));
 
